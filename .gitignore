@@ -1,0 +1,70 @@
+# Laravel
+/vendor
+/node_modules
+/public/build
+/public/hot
+
+/storage/*.key
+/storage/logs/*
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/testing/*
+/storage/debugbar/*
+
+/bootstrap/cache/*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Composer
+/composer.phar
+
+# Laravel Mix / Vite
+/public/mix-manifest.json
+/hot
+
+# PHPUnit
+.phpunit.result.cache
+
+# NPM / Package Manager Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDE
+/.idea
+/.vscode
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.log
+*.tmp
+*.swp
+*.bak
+*~
+
+# Public storage / cache
+/public/storage
+/storage/app/public
+
+# Backup folder
+/laravel_backup
+
+# Windsurf
+.windsurf/
+
+# Optional cache
+.cache/
+.temp/

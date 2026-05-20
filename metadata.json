@@ -1,0 +1,6 @@
+{
+  "name": "Aplikasi UMKM Multi-Tenant",
+  "description": "Aplikasi Multi-Tenant UMKM dengan Fitur Dashboard Admin & Halaman Pelanggan (Katalog, Keranjang, Checkout, Riwayat Pesanan). Menyertakan source code Laravel 11 lengkap di dalam file sistem.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

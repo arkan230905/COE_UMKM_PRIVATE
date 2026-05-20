@@ -1,0 +1,26 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-bento-navy: #1E3A5F;
+  --color-bento-light-blue: #E0F2FE;
+  --color-bento-bg: #F8FAFC;
+  --color-bento-text-dark: #1E293B;
+  --color-bento-text-muted: #64748B;
+  
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+@layer base {
+  body {
+    background-color: #F8FAFC;
+    color: #1E293B;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    transition: background-color 300ms, color 300ms;
+  }
+  
+  html.dark body {
+    background-color: #020617; /* slate-950 */
+    color: #F8FAFC; /* slate-50 */
+  }
+}
