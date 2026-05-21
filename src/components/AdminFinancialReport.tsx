@@ -70,21 +70,33 @@ export default function AdminFinancialReport({
     setDescription('');
   };
 
-  // Monthly flow charting (Mock representation mapping dynamic totals onto general months flow)
-  const financialFlowData = [
-    { name: 'Jan', Pemasukan: totalIncome * 0.06, Pengeluaran: totalExpense * 0.05 },
-    { name: 'Feb', Pemasukan: totalIncome * 0.07, Pengeluaran: totalExpense * 0.06 },
-    { name: 'Mar', Pemasukan: totalIncome * 0.08, Pengeluaran: totalExpense * 0.07 },
-    { name: 'Apr', Pemasukan: totalIncome * 0.07, Pengeluaran: totalExpense * 0.06 },
-    { name: 'May', Pemasukan: totalIncome * 0.09, Pengeluaran: totalExpense * 0.12 }, // spike in active month
-    { name: 'Jun', Pemasukan: totalIncome * 0.10, Pengeluaran: totalExpense * 0.08 },
-    { name: 'Jul', Pemasukan: totalIncome * 0.09, Pengeluaran: totalExpense * 0.08 },
-    { name: 'Aug', Pemasukan: totalIncome * 0.11, Pengeluaran: totalExpense * 0.09 },
-    { name: 'Sep', Pemasukan: totalIncome * 0.08, Pengeluaran: totalExpense * 0.07 },
-    { name: 'Oct', Pemasukan: totalIncome * 0.12, Pengeluaran: totalExpense * 0.08 },
-    { name: 'Nov', Pemasukan: totalIncome * 0.11, Pengeluaran: totalExpense * 0.09 },
-    { name: 'Dec', Pemasukan: totalIncome * 0.12, Pengeluaran: totalExpense * 0.15 },
-  ];
+  // Aggregate actual monthly data from transactions (sales) and expenses (purchases)
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  
+  const monthlySales = months.map((_, index) => {
+    return transactions
+      .filter(t => {
+        const txDate = new Date(t.createdAt);
+        const isCompleted = t.status === 'completed' || t.status === 'paid';
+        return isCompleted && txDate.getMonth() === index;
+      })
+      .reduce((sum, t) => sum + t.totalAmount, 0);
+  });
+
+  const monthlyPurchases = months.map((_, index) => {
+    return expenses
+      .filter(e => {
+        const expDate = new Date(e.date);
+        return expDate.getMonth() === index;
+      })
+      .reduce((sum, e) => sum + e.amount, 0);
+  });
+
+  const financialFlowData = months.map((month, index) => ({
+    name: month,
+    Pemasukan: monthlySales[index],
+    Pengeluaran: monthlyPurchases[index]
+  }));
 
   // Combined records for list (Transactions + Manual Incomes)
   const combinedIncomesList = [

@@ -112,6 +112,7 @@ export default function App() {
   const [registerEmail, setRegisterEmail] = useState('');
   const [registerPhone, setRegisterPhone] = useState('');
   const [registerAddress, setRegisterAddress] = useState('');
+  const [registerPassword, setRegisterPassword] = useState('');
 
   // Settings modal dynamic tab
   const [settingsTab, setSettingsTab] = useState<'profile' | 'register' | 'data'>('profile');
@@ -451,7 +452,7 @@ export default function App() {
       case 'customers':
         return (
           <AdminCustomers
-            customers={allCustomers.filter(c => c.umkmId === currentPreset.id || (!c.umkmId && currentPreset.id === 'pharmacy'))}
+            customers={allCustomers.filter(c => !c.umkmId || c.umkmId === currentPreset.id)}
             transactions={transactions}
             currentPreset={currentPreset}
           />
