@@ -126,7 +126,7 @@ export default function App() {
 
   // Synchronizers of state changes to LocalStorage
   useEffect(() => {
-    localStorage.setItem('user_umkm_presets', JSON.stringify(allPresets));
+    localStorage.setItem('umkm_presets', JSON.stringify(allPresets));
   }, [allPresets]);
 
   useEffect(() => {

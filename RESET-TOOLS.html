@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SIUPIN Reset Tools - Pilih Metode Reset</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 32px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin-bottom: 30px;
+            border-radius: 8px;
+        }
+
+        .warning h3 {
+            color: #856404;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .warning p {
+            color: #856404;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .tool-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 25px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tool-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.2);
+        }
+
+        .tool-card.recommended {
+            border-color: #dc2626;
+            background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        }
+
+        .tool-card.recommended .badge {
+            background: #dc2626;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .tool-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .tool-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 8px;
+        }
+
+        .tool-desc {
+            font-size: 13px;
+            color: #4a5568;
+            line-height: 1.5;
+            margin-bottom: 15px;
+        }
+
+        .tool-features {
+            list-style: none;
+            margin-bottom: 15px;
+        }
+
+        .tool-features li {
+            font-size: 12px;
+            color: #10b981;
+            margin-bottom: 5px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .tool-features li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .tool-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .tool-button:hover {
+            transform: scale(1.02);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .tool-card.recommended .tool-button {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        }
+
+        .manual-section {
+            background: #f7fafc;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .manual-section h3 {
+            color: #2d3748;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .manual-steps {
+            font-size: 13px;
+            color: #4a5568;
+            line-height: 1.8;
+        }
+
+        .manual-steps ol {
+            padding-left: 20px;
+        }
+
+        .manual-steps li {
+            margin-bottom: 8px;
+        }
+
+        .manual-steps code {
+            background: #e2e8f0;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #dc2626;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 2px solid #e2e8f0;
+            color: #718096;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ SIUPIN Reset Tools</h1>
+        <p class="subtitle">Pilih metode reset yang sesuai dengan kebutuhan Anda</p>
+
+        <div class="warning">
+            <h3>⚠️ PERINGATAN PENTING!</h3>
+            <p>
+                Semua metode reset akan menghapus <strong>SEMUA DATA PERMANEN</strong> termasuk:
+                UMKM yang terdaftar, transaksi, produk, kategori, pelanggan, dan pengaturan.
+                <br><strong>Data tidak dapat dikembalikan setelah dihapus!</strong>
+            </p>
+        </div>
+
+        <div class="tools-grid">
+            <!-- Tool 1: Visual Reset -->
+            <div class="tool-card" onclick="runVisualReset()">
+                <div class="tool-icon">🎨</div>
+                <div class="tool-title">Visual Reset</div>
+                <div class="tool-desc">Reset dengan interface visual yang mudah digunakan</div>
+                <ul class="tool-features">
+                    <li>Paling mudah untuk pemula</li>
+                    <li>Tampilan statistik data</li>
+                    <li>Konfirmasi sebelum hapus</li>
+                </ul>
+                <button class="tool-button">🚀 Jalankan Visual Reset</button>
+            </div>
+
+            <!-- Tool 2: Quick Reset -->
+            <div class="tool-card" onclick="runQuickReset()">
+                <div class="tool-icon">⚡</div>
+                <div class="tool-title">Quick Reset</div>
+                <div class="tool-desc">Reset cepat hanya dengan 1 perintah</div>
+                <ul class="tool-features">
+                    <li>Paling cepat</li>
+                    <li>Hanya 1 baris command</li>
+                    <li>Instant reload</li>
+                </ul>
+                <button class="tool-button">⚡ Jalankan Quick Reset</button>
+            </div>
+
+            <!-- Tool 3: Force Clear (RECOMMENDED) -->
+            <div class="tool-card recommended" onclick="runForceClear()">
+                <div class="badge">⭐ RECOMMENDED</div>
+                <div class="tool-icon">🔴</div>
+                <div class="tool-title">Force Clear (Most Powerful)</div>
+                <div class="tool-desc">Reset paling kuat untuk fix masalah stuck data</div>
+                <ul class="tool-features">
+                    <li>Multiple passes cleaning</li>
+                    <li>Fix "Email sudah terdaftar"</li>
+                    <li>Verifikasi lengkap</li>
+                    <li>Clear both umkm_presets keys</li>
+                </ul>
+                <button class="tool-button">🔥 Jalankan Force Clear</button>
+            </div>
+        </div>
+
+        <div class="manual-section">
+            <h3>🔧 Reset Manual via DevTools</h3>
+            <div class="manual-steps">
+                <p>Jika semua metode di atas gagal, lakukan reset manual:</p>
+                <ol>
+                    <li>Tekan <code>F12</code> untuk buka DevTools</li>
+                    <li>Pilih tab <code>Application</code> (Chrome) atau <code>Storage</code> (Firefox)</li>
+                    <li>Klik <code>Local Storage</code> → <code>http://localhost:3000</code></li>
+                    <li>Klik kanan → <code>Clear All</code></li>
+                    <li>Atau hapus key: <code>umkm_presets</code>, <code>user_umkm_presets</code>, <code>is_super_admin_logged_in</code></li>
+                    <li>Hard refresh: <code>Ctrl + Shift + R</code></li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>💡 Setelah reset, hard refresh browser dengan <strong>Ctrl + Shift + R</strong></p>
+            <p>Baca dokumentasi lengkap di <strong>CARA-RESET-DATABASE.md</strong></p>
+        </div>
+    </div>
+
+    <script>
+        function runVisualReset() {
+            if (confirm('🎨 VISUAL RESET\n\nAnda akan membuka RESET-DATABASE.html yang memiliki interface visual.\n\nLanjutkan?')) {
+                window.open('RESET-DATABASE.html', '_blank');
+            }
+        }
+
+        function runQuickReset() {
+            if (confirm('⚡ QUICK RESET\n\nMetode ini akan menghapus SEMUA data dengan cepat.\n\nTIDAK DAPAT DIBATALKAN!\n\nLanjutkan?')) {
+                console.clear();
+                console.log('%c⚡ QUICK RESET STARTED', 'background: #3b82f6; color: white; font-size: 20px; font-weight: bold; padding: 10px 20px;');
+                
+                // Clear localStorage
+                const beforeCount = Object.keys(localStorage).length;
+                localStorage.clear();
+                const afterCount = Object.keys(localStorage).length;
+                
+                console.log(`%c✓ Cleared ${beforeCount} items from localStorage`, 'color: #10b981; font-weight: bold;');
+                
+                alert('✓ Quick Reset Berhasil!\n\n' +
+                      `Data dihapus: ${beforeCount} item\n\n` +
+                      'Halaman akan di-refresh ke /welcome...');
+                
+                window.location.href = 'http://localhost:3000/welcome';
+            }
+        }
+
+        function runForceClear() {
+            if (confirm('🔴 FORCE CLEAR - ULTIMATE WIPE\n\n' +
+                        'Ini adalah metode PALING KUAT!\n\n' +
+                        'Akan menghapus:\n' +
+                        '✓ Semua UMKM registrations\n' +
+                        '✓ Semua data transaksi\n' +
+                        '✓ BOTH keys: umkm_presets & user_umkm_presets\n' +
+                        '✓ Semua session data\n\n' +
+                        'TIDAK DAPAT DIBATALKAN!\n\n' +
+                        'Lanjutkan?')) {
+                
+                console.clear();
+                console.log('%c🔴 FORCE CLEAR - ULTIMATE WIPE', 'background: #dc2626; color: white; font-size: 24px; font-weight: bold; padding: 15px 30px; border-radius: 8px;');
+                console.log('');
+                
+                // Phase 1: Scan
+                console.log('%c🔍 PHASE 1: SCANNING DATA', 'background: #3b82f6; color: white; font-weight: bold; font-size: 16px; padding: 8px 15px;');
+                const beforeKeys = Object.keys(localStorage);
+                console.log(`Total items: ${beforeKeys.length}`);
+                console.log('');
+                
+                // Phase 2: Clear
+                console.log('%c🔥 PHASE 2: CLEARING (Multiple Passes)', 'background: #ef4444; color: white; font-weight: bold; font-size: 16px; padding: 8px 15px;');
+                
+                // Pass 1
+                console.log('Pass 1/4: localStorage.clear()');
+                localStorage.clear();
+                
+                // Pass 2: Critical keys
+                console.log('Pass 2/4: Removing critical keys');
+                const criticalKeys = ['umkm_presets', 'user_umkm_presets', 'is_super_admin_logged_in', 'user_customers'];
+                criticalKeys.forEach(key => {
+                    for (let i = 0; i < 5; i++) {
+                        localStorage.removeItem(key);
+                    }
+                    console.log(`  ✓ Removed: ${key}`);
+                });
+                
+                // Pass 3: UMKM keys
+                console.log('Pass 3/4: Removing umkm_* keys');
+                beforeKeys.filter(k => k.startsWith('umkm_')).forEach(key => {
+                    localStorage.removeItem(key);
+                    console.log(`  ✓ Removed: ${key}`);
+                });
+                
+                // Pass 4: Remaining
+                console.log('Pass 4/4: Removing remaining keys');
+                Object.keys(localStorage).forEach(key => {
+                    localStorage.removeItem(key);
+                });
+                
+                console.log('');
+                
+                // Phase 3: Verify
+                console.log('%c✅ PHASE 3: VERIFICATION', 'background: #10b981; color: white; font-weight: bold; font-size: 16px; padding: 8px 15px;');
+                const afterKeys = Object.keys(localStorage);
+                const deleted = beforeKeys.length - afterKeys.length;
+                
+                console.log(`Before: ${beforeKeys.length} items`);
+                console.log(`After: ${afterKeys.length} items`);
+                console.log(`Deleted: ${deleted} items`);
+                console.log('');
+                
+                // Check critical keys
+                let allClear = true;
+                criticalKeys.forEach(key => {
+                    const exists = localStorage.getItem(key);
+                    if (exists === null) {
+                        console.log(`%c✓ ${key}: CLEAR`, 'color: #10b981; font-weight: bold;');
+                    } else {
+                        console.error(`%c✗ ${key}: STILL EXISTS!`, 'color: #dc2626; font-weight: bold;');
+                        allClear = false;
+                    }
+                });
+                
+                console.log('');
+                
+                if (afterKeys.length === 0 && allClear) {
+                    console.log('%c🎉 SUCCESS! DATABASE COMPLETELY EMPTY!', 'background: #10b981; color: white; font-size: 20px; font-weight: bold; padding: 12px 25px;');
+                } else {
+                    console.log('%c⚠️ Some data may remain. Check Application tab.', 'background: #f59e0b; color: white; font-weight: bold; padding: 8px 15px;');
+                }
+                
+                console.log('');
+                console.log('%c⚠️ CRITICAL: Do a HARD REFRESH!', 'color: #dc2626; font-size: 16px; font-weight: bold;');
+                console.log('Press: Ctrl + Shift + R (Windows) or Cmd + Shift + R (Mac)');
+                console.log('');
+                
+                alert('🔴 FORCE CLEAR COMPLETE!\n\n' +
+                      `Items deleted: ${deleted}\n` +
+                      `Remaining: ${afterKeys.length}\n\n` +
+                      '⚠️ CRITICAL STEP:\n' +
+                      'Do a HARD REFRESH now!\n\n' +
+                      'Windows: Ctrl + Shift + R\n' +
+                      'Mac: Cmd + Shift + R\n\n' +
+                      'Or close ALL tabs and restart browser.\n\n' +
+                      'Page will redirect in 3 seconds...');
+                
+                setTimeout(() => {
+                    window.location.href = 'http://localhost:3000/welcome';
+                }, 3000);
+            }
+        }
+
+        // Show info on load
+        window.onload = function() {
+            console.clear();
+            console.log('%c🗑️ SIUPIN RESET TOOLS', 'background: #667eea; color: white; font-size: 24px; font-weight: bold; padding: 15px 30px;');
+            console.log('');
+            console.log('%c3 Reset Methods Available:', 'color: #4a5568; font-weight: bold; font-size: 14px;');
+            console.log('1. 🎨 Visual Reset - Easiest');
+            console.log('2. ⚡ Quick Reset - Fastest');
+            console.log('3. 🔴 Force Clear - Most Powerful (RECOMMENDED for stuck data)');
+            console.log('');
+            console.log('%cChoose a method by clicking the buttons above.', 'color: #718096;');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║  ⚡ QUICK FIX: Error "Email sudah terdaftar"                      ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+🔴 MASALAH:
+   Error: Email "Dini@gmail.com" sudah terdaftar untuk UMKM "Dini's Cake"
+   Padahal database sudah kosong.
+
+✅ SOLUSI CEPAT (5 Menit):
+
+   1. Buka: RESET-TOOLS.html
+   
+   2. Klik: "🔥 Jalankan Force Clear"
+   
+   3. Konfirmasi: Klik OK
+   
+   4. Hard Refresh Browser:
+      Windows: Ctrl + Shift + R
+      Mac: Cmd + Shift + R
+   
+   5. Buka: http://localhost:3000/welcome
+   
+   6. Daftar UMKM baru dengan:
+      - Email BARU (bukan Dini@gmail.com)
+      - Nama UMKM BARU (bukan Dini's Cake)
+   
+   7. SELESAI! ✓
+
+───────────────────────────────────────────────────────────────────
+
+🔍 PENJELASAN TEKNIS:
+
+   Bug: Ada 2 localStorage keys yang konflik
+        - umkm_presets (key utama)
+        - user_umkm_presets (key backup)
+   
+   Fix: Sekarang hanya pakai 1 key: umkm_presets
+        Force Clear menghapus KEDUA keys
+
+───────────────────────────────────────────────────────────────────
+
+📚 DOKUMENTASI LENGKAP:
+
+   1. SOLUSI-MASALAH-EMAIL.md    ← Baca ini untuk penjelasan lengkap
+   2. CARA-RESET-DATABASE.md     ← Panduan reset database
+   3. FORCE-CLEAR-ALL.js         ← Script paling powerful
+   4. RESET-TOOLS.html           ← Visual interface
+
+───────────────────────────────────────────────────────────────────
+
+🎯 TESTING SETELAH FIX:
+
+   ✓ Tidak ada error "Email sudah terdaftar"
+   ✓ Bisa daftar UMKM baru
+   ✓ Database benar-benar kosong
+   ✓ Nama produk di invoice BENAR
+   ✓ Kategori makanan/minuman → ada pengiriman
+   ✓ Kategori tiket/wisata → ada booking date
+   ✓ Kategori lainnya → invoice digital
+
+───────────────────────────────────────────────────────────────────
+
+💡 TIPS:
+
+   - Gunakan email BARU untuk testing
+   - Gunakan nama UMKM BARU
+   - Hard refresh setelah reset (Ctrl + Shift + R)
+   - Jika masih error, pakai Incognito window
+
+═══════════════════════════════════════════════════════════════════

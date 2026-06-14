@@ -171,6 +171,13 @@ export default function CustomerCatalog({
       };
     });
 
+    console.log('=== CHECKOUT DEBUG ===');
+    console.log('Cart items:', cart);
+    console.log('Items snapshot:', itemsSnapshot);
+    console.log('Needs shipping:', needsShipping);
+    console.log('Booking date:', bookingDate);
+    console.log('=====================');
+
     // Create a new transition entry
     const newTx: Transaction = {
       id: transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 301,

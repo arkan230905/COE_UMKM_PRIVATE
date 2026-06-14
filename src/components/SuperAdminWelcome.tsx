@@ -154,7 +154,7 @@ export default function SuperAdminWelcome({
     // Update preset database
     setAllPresets(prev => {
       const next = [...prev, newPreset];
-      localStorage.setItem('user_umkm_presets', JSON.stringify(next));
+      localStorage.setItem('umkm_presets', JSON.stringify(next));
       return next;
     });
 

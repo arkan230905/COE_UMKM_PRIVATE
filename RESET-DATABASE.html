@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🗑️ Reset Database SIUPIN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            max-width: 600px;
+            width: 100%;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+            animation: slideIn 0.5s ease;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .header {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+            font-weight: 800;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .content {
+            padding: 30px;
+        }
+        .warning-box {
+            background: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+        .warning-box strong {
+            color: #92400e;
+            display: block;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .warning-box p {
+            color: #78350f;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        .info-list {
+            background: #f8fafc;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .info-list h3 {
+            color: #1e293b;
+            font-size: 16px;
+            margin-bottom: 12px;
+        }
+        .info-list ul {
+            list-style: none;
+        }
+        .info-list li {
+            padding: 8px 0;
+            color: #475569;
+            font-size: 14px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+        .info-list li:before {
+            content: "✓ ";
+            color: #10b981;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+        .button-container {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        button {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .btn-reset {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+        }
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+        }
+        .btn-cancel {
+            background: #e2e8f0;
+            color: #475569;
+        }
+        .btn-cancel:hover {
+            background: #cbd5e1;
+        }
+        .success-box {
+            display: none;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            margin-top: 20px;
+            animation: slideIn 0.5s ease;
+        }
+        .success-box h2 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        .success-box p {
+            opacity: 0.95;
+            font-size: 14px;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .stats {
+            background: #eff6ff;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 13px;
+            color: #1e40af;
+            text-align: center;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗑️ Reset Database SIUPIN</h1>
+            <p>Bersihkan semua data untuk testing ulang</p>
+        </div>
+        
+        <div class="content" id="mainContent">
+            <div class="warning-box">
+                <strong>⚠️ PERHATIAN!</strong>
+                <p>Tool ini akan menghapus SEMUA data yang tersimpan di LocalStorage termasuk:</p>
+            </div>
+            
+            <div class="info-list">
+                <h3>Data yang akan dihapus:</h3>
+                <ul>
+                    <li>Semua Transaksi & Invoice</li>
+                    <li>Data Kategori Produk</li>
+                    <li>Data Produk & Stok</li>
+                    <li>Data Pelanggan</li>
+                    <li>Data Pengeluaran (Expenses)</li>
+                    <li>Data Pendapatan (Income Records)</li>
+                    <li>Pengaturan UMKM</li>
+                </ul>
+            </div>
+
+            <div class="stats" id="dataStats">
+                Memuat statistik data...
+            </div>
+
+            <div class="button-container">
+                <button class="btn-cancel" onclick="window.close()">Batal</button>
+                <button class="btn-reset" onclick="resetDatabase()">🔥 Hapus Semua Data</button>
+            </div>
+        </div>
+
+        <div class="loading" id="loadingBox">
+            <div class="spinner"></div>
+            <p style="color: #64748b; font-weight: 600;">Menghapus data...</p>
+        </div>
+
+        <div class="success-box" id="successBox">
+            <h2>✓ Berhasil!</h2>
+            <p>Semua data telah dihapus. Aplikasi akan di-refresh dalam 2 detik...</p>
+        </div>
+    </div>
+
+    <script>
+        // Show current data stats
+        function showDataStats() {
+            const keys = Object.keys(localStorage);
+            const totalItems = keys.length;
+            const totalSize = JSON.stringify(localStorage).length;
+            const sizeMB = (totalSize / 1024 / 1024).toFixed(2);
+            
+            document.getElementById('dataStats').innerHTML = `
+                📊 Total Item Tersimpan: <strong>${totalItems}</strong> | 
+                Ukuran: <strong>${sizeMB} MB</strong>
+            `;
+        }
+
+        function resetDatabase() {
+            // Double confirmation
+            const confirmed = confirm(
+                '⚠️ KONFIRMASI AKHIR\n\n' +
+                'Apakah Anda BENAR-BENAR YAKIN ingin menghapus SEMUA data?\n\n' +
+                '• Semua transaksi akan hilang\n' +
+                '• Semua produk akan hilang\n' +
+                '• Semua pelanggan akan hilang\n' +
+                '• Pengaturan UMKM akan hilang\n' +
+                '• Semua UMKM terdaftar akan hilang\n\n' +
+                'Data yang dihapus TIDAK DAPAT dikembalikan!\n\n' +
+                'Klik OK untuk melanjutkan atau Cancel untuk membatalkan.'
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            // Show loading
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('loadingBox').style.display = 'block';
+
+            // Simulate delay for better UX
+            setTimeout(() => {
+                try {
+                    // Get all keys before clearing
+                    const keys = Object.keys(localStorage);
+                    const deletedCount = keys.length;
+
+                    console.group('🗑️ DATABASE RESET LOG');
+                    console.log('Total items to delete:', deletedCount);
+                    
+                    // Log specific important keys
+                    const importantKeys = ['umkm_presets', 'user_umkm_presets', 'is_super_admin_logged_in'];
+                    importantKeys.forEach(key => {
+                        if (localStorage.getItem(key)) {
+                            console.log('- Found important key:', key);
+                            console.log('  Value:', localStorage.getItem(key));
+                        }
+                    });
+                    
+                    // Log all keys that will be deleted
+                    keys.forEach(key => {
+                        console.log('- Deleting:', key);
+                    });
+
+                    // Clear all localStorage
+                    localStorage.clear();
+
+                    // Double-check specific keys are removed
+                    importantKeys.forEach(key => {
+                        if (localStorage.getItem(key)) {
+                            console.warn('⚠️ Failed to delete:', key);
+                            localStorage.removeItem(key);
+                        }
+                    });
+
+                    console.log('✓ All data cleared successfully!');
+                    console.log('Deleted items:', deletedCount);
+                    console.groupEnd();
+
+                    // Verify it's empty
+                    const remainingKeys = Object.keys(localStorage);
+                    console.log('Remaining items:', remainingKeys.length);
+                    
+                    if (remainingKeys.length > 0) {
+                        console.warn('⚠️ Some items still remain:', remainingKeys);
+                    }
+
+                    // Show success
+                    document.getElementById('loadingBox').style.display = 'none';
+                    document.getElementById('successBox').style.display = 'block';
+
+                    // Redirect to app
+                    setTimeout(() => {
+                        window.location.href = 'http://localhost:3000/welcome';
+                    }, 2000);
+
+                } catch (error) {
+                    console.error('Error clearing database:', error);
+                    alert('Terjadi kesalahan saat menghapus data: ' + error.message);
+                    location.reload();
+                }
+            }, 1000);
+        }
+
+        // Initialize
+        showDataStats();
+    </script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Transactions Data - SIUPIN</title>
+    <style>
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1e3a5f;
+            margin-bottom: 10px;
+        }
+        p {
+            color: #666;
+            line-height: 1.6;
+        }
+        button {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+        button:hover {
+            background: #dc2626;
+        }
+        .success {
+            background: #10b981;
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+        .warning {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            color: #92400e;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️ Clear Transaction Data</h1>
+        <div class="warning">
+            <strong>⚠️ PERHATIAN!</strong><br>
+            Tool ini akan menghapus SEMUA data transaksi yang tersimpan di localStorage untuk semua UMKM.
+            Data yang dihapus TIDAK DAPAT dikembalikan!
+        </div>
+        
+        <p>
+            Gunakan tool ini jika Anda menemukan data transaksi yang salah atau corrupt.
+            Setelah menghapus, Anda perlu membuat transaksi baru untuk testing.
+        </p>
+        
+        <p><strong>Yang akan dihapus:</strong></p>
+        <ul>
+            <li>Semua transaksi (transactions)</li>
+            <li>Semua data item transaksi</li>
+            <li>History pembelian customer</li>
+        </ul>
+        
+        <button onclick="clearTransactions()">Hapus Semua Data Transaksi</button>
+        
+        <div class="success" id="successMsg">
+            ✓ Data transaksi berhasil dihapus!<br>
+            Silakan refresh halaman aplikasi dan lakukan transaksi baru.
+        </div>
+    </div>
+
+    <script>
+        function clearTransactions() {
+            if (!confirm('Apakah Anda YAKIN ingin menghapus SEMUA data transaksi?\n\nData yang dihapus TIDAK DAPAT dikembalikan!')) {
+                return;
+            }
+
+            let deletedCount = 0;
+            const keys = Object.keys(localStorage);
+            
+            // Clear all transaction-related data
+            keys.forEach(key => {
+                if (key.includes('transactions') || key.includes('_tx_')) {
+                    localStorage.removeItem(key);
+                    deletedCount++;
+                }
+            });
+
+            console.log(`Deleted ${deletedCount} transaction-related items from localStorage`);
+            
+            document.getElementById('successMsg').style.display = 'block';
+            
+            setTimeout(() => {
+                window.location.href = 'http://localhost:3000';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>
