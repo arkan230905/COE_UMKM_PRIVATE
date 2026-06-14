@@ -96,6 +96,11 @@ export interface Expense {
   date: string;
   notes: string;
   createdAt: string;
+  // Fields specific for "Pembelian Stok" category
+  materialName?: string; // Nama bahan
+  quantity?: number; // Jumlah
+  unit?: string; // Satuan (kg, liter, pcs, dll)
+  pricePerUnit?: number; // Harga per satuan
 }
 
 // 8. IncomeRecord Entity (mirrors income_records MySQL table)

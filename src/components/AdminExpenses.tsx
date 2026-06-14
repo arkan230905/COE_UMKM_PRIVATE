@@ -26,6 +26,12 @@ export default function AdminExpenses({
   const [notes, setNotes] = useState('');
   const [error, setError] = useState('');
 
+  // Additional form states for "Pembelian Stok"
+  const [materialName, setMaterialName] = useState('');
+  const [quantity, setQuantity] = useState<number>(0);
+  const [unit, setUnit] = useState('pcs');
+  const [pricePerUnit, setPricePerUnit] = useState<number>(0);
+
   const categories = ['Pembelian Stok', 'Gaji Karyawan', 'Tagihan Listrik & Air', 'Sewa & Keamanan', 'Lain-lain'];
 
   const formatCurrency = (val: number) => {
@@ -41,6 +47,26 @@ export default function AdminExpenses({
     setAmount(num);
   };
 
+  const handleQuantityChange = (valueStr: string) => {
+    const digits = valueStr.replace(/\D/g, '');
+    const num = digits ? parseInt(digits, 10) : 0;
+    setQuantity(num);
+    // Auto calculate total if price per unit is set
+    if (pricePerUnit > 0) {
+      setAmount(num * pricePerUnit);
+    }
+  };
+
+  const handlePricePerUnitChange = (valueStr: string) => {
+    const digits = valueStr.replace(/\D/g, '');
+    const num = digits ? parseInt(digits, 10) : 0;
+    setPricePerUnit(num);
+    // Auto calculate total if quantity is set
+    if (quantity > 0) {
+      setAmount(quantity * num);
+    }
+  };
+
   const handleOpenAdd = () => {
     setEditingExpense(null);
     setExpenseCategory('Pembelian Stok');
@@ -48,6 +74,10 @@ export default function AdminExpenses({
     setAmount(0);
     setDate(new Date().toISOString().substring(0, 10));
     setNotes('');
+    setMaterialName('');
+    setQuantity(0);
+    setUnit('pcs');
+    setPricePerUnit(0);
     setError('');
     setIsOpenModal(true);
   };
@@ -59,6 +89,10 @@ export default function AdminExpenses({
     setAmount(exp.amount);
     setDate(exp.date);
     setNotes(exp.notes);
+    setMaterialName(exp.materialName || '');
+    setQuantity(exp.quantity || 0);
+    setUnit(exp.unit || 'pcs');
+    setPricePerUnit(exp.pricePerUnit || 0);
     setError('');
     setIsOpenModal(true);
   };
@@ -73,15 +107,35 @@ export default function AdminExpenses({
     e.preventDefault();
     setError('');
 
-    if (!description.trim()) return setError('Deskripsi pengeluaran wajib diisi.');
-    if (amount <= 0) return setError('Nominal pengeluaran harus lebih dari 0.');
+    // Validation for Pembelian Stok
+    if (expenseCategory === 'Pembelian Stok') {
+      if (!materialName.trim()) return setError('Nama bahan wajib diisi untuk pembelian stok.');
+      if (quantity <= 0) return setError('Quantity harus lebih dari 0.');
+      if (pricePerUnit <= 0) return setError('Harga per satuan harus lebih dari 0.');
+    } else {
+      if (!description.trim()) return setError('Deskripsi pengeluaran wajib diisi.');
+      if (amount <= 0) return setError('Nominal pengeluaran harus lebih dari 0.');
+    }
 
     if (editingExpense) {
       // Edit
       setExpenses(prev =>
         prev.map(e =>
           e.id === editingExpense.id
-            ? { ...e, expenseCategory, description, amount, date, notes }
+            ? { 
+                ...e, 
+                expenseCategory, 
+                description, 
+                amount, 
+                date, 
+                notes,
+                ...(expenseCategory === 'Pembelian Stok' && {
+                  materialName,
+                  quantity,
+                  unit,
+                  pricePerUnit
+                })
+              }
             : e
         )
       );
@@ -95,6 +149,12 @@ export default function AdminExpenses({
         date,
         notes,
         createdAt: new Date().toISOString(),
+        ...(expenseCategory === 'Pembelian Stok' && {
+          materialName,
+          quantity,
+          unit,
+          pricePerUnit
+        })
       };
       setExpenses(prev => [newExp, ...prev]);
     }
@@ -104,13 +164,19 @@ export default function AdminExpenses({
 
   // Filter listings
   const filteredExpenses = expenses.filter(e => {
-    const matchesSearch = e.description.toLowerCase().includes(searchTerm.toLowerCase()) || e.notes.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = e.description.toLowerCase().includes(searchTerm.toLowerCase()) || e.notes.toLowerCase().includes(searchTerm.toLowerCase()) || (e.materialName && e.materialName.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesCategory = selectedCategory === 'all' || e.expenseCategory === selectedCategory;
 
     return matchesSearch && matchesCategory;
   });
 
+  // Separate expenses into stock purchases and others
+  const stockPurchases = filteredExpenses.filter(e => e.expenseCategory === 'Pembelian Stok');
+  const otherExpenses = filteredExpenses.filter(e => e.expenseCategory !== 'Pembelian Stok');
+
   const aggregateExpenses = filteredExpenses.reduce((sum, e) => sum + e.amount, 0);
+  const aggregateStockPurchases = stockPurchases.reduce((sum, e) => sum + e.amount, 0);
+  const aggregateOtherExpenses = otherExpenses.reduce((sum, e) => sum + e.amount, 0);
 
   return (
     <div className="space-y-6">
@@ -171,74 +237,186 @@ export default function AdminExpenses({
         </div>
       </div>
 
-      {/* Expenses Table list */}
-      {filteredExpenses.length > 0 ? (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden font-medium">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs text-slate-500">
-              <thead className="text-[11px] text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/50">
-                <tr>
-                  <th scope="col" className="px-6 py-4">ID Cost</th>
-                  <th scope="col" className="px-6 py-4">Kategori Cost</th>
-                  <th scope="col" className="px-6 py-4">Deskripsi Pembayaran</th>
-                  <th scope="col" className="px-6 py-4">Tanggal Pembulatan</th>
-                  <th scope="col" className="px-6 py-4 text-right">Nominal</th>
-                  <th scope="col" className="px-6 py-4">Catatan Supplier</th>
-                  <th scope="col" className="px-6 py-4 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
-                {filteredExpenses.map((exp) => (
-                  <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-slate-400">
-                      #EXP0{exp.id}
-                    </td>
-
-                    <td className="px-6 py-4 text-slate-950 dark:text-white font-bold">
-                      <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-bold block w-fit text-slate-700 dark:text-slate-300">
-                        {exp.expenseCategory}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4 text-slate-800 dark:text-slate-200">
-                      {exp.description}
-                    </td>
-
-                    <td className="px-6 py-4">
-                      {exp.date}
-                    </td>
-
-                    <td className="px-6 py-4 text-right font-black text-rose-600">
-                      {formatCurrency(exp.amount)}
-                    </td>
-
-                    <td className="px-6 py-4 max-w-xs text-slate-400 truncate">
-                      {exp.notes || <span className="italic text-slate-300">Kosong</span>}
-                    </td>
-
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => handleOpenEdit(exp)}
-                          className="p-1 px-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
-                        >
-                          <Edit2 size={12} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(exp.id)}
-                          className="p-1 px-2 text-rose-500 hover:bg-rose-50 rounded transition-colors"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </td>
+      {/* Expenses Table list - STOCK PURCHASES */}
+      {stockPurchases.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="p-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-lg">
+                📦
+              </span>
+              Pembelian Stok Bahan
+            </h2>
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+              Total: {formatCurrency(aggregateStockPurchases)}
+            </span>
+          </div>
+          
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden font-medium">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-500">
+                <thead className="text-[11px] text-slate-400 uppercase bg-emerald-50 dark:bg-emerald-900/20">
+                  <tr>
+                    <th scope="col" className="px-6 py-4">ID</th>
+                    <th scope="col" className="px-6 py-4">Nama Bahan</th>
+                    <th scope="col" className="px-6 py-4 text-center">Quantity</th>
+                    <th scope="col" className="px-6 py-4">Satuan</th>
+                    <th scope="col" className="px-6 py-4 text-right">Harga/Satuan</th>
+                    <th scope="col" className="px-6 py-4 text-right font-bold">Total</th>
+                    <th scope="col" className="px-6 py-4">Tanggal</th>
+                    <th scope="col" className="px-6 py-4">Deskripsi</th>
+                    <th scope="col" className="px-6 py-4">Catatan</th>
+                    <th scope="col" className="px-6 py-4 text-center">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+                  {stockPurchases.map((exp) => (
+                    <tr key={exp.id} className="hover:bg-emerald-50/50 dark:hover:bg-emerald-900/10 transition-colors">
+                      <td className="px-6 py-4 font-mono font-bold text-slate-400">
+                        #EXP0{exp.id}
+                      </td>
+
+                      <td className="px-6 py-4 text-slate-950 dark:text-white font-bold">
+                        {exp.materialName || '-'}
+                      </td>
+
+                      <td className="px-6 py-4 text-center font-bold text-slate-800 dark:text-slate-200">
+                        {exp.quantity || '-'}
+                      </td>
+
+                      <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+                        {exp.unit || '-'}
+                      </td>
+
+                      <td className="px-6 py-4 text-right font-semibold text-slate-700 dark:text-slate-300">
+                        {exp.pricePerUnit ? formatCurrency(exp.pricePerUnit) : '-'}
+                      </td>
+
+                      <td className="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(exp.amount)}
+                      </td>
+
+                      <td className="px-6 py-4 text-slate-500">
+                        {exp.date}
+                      </td>
+
+                      <td className="px-6 py-4 text-slate-800 dark:text-slate-200 max-w-xs truncate">
+                        {exp.description || '-'}
+                      </td>
+
+                      <td className="px-6 py-4 max-w-xs text-slate-400 truncate">
+                        {exp.notes || <span className="italic text-slate-300">Kosong</span>}
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEdit(exp)}
+                            className="p-1 px-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(exp.id)}
+                            className="p-1 px-2 text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {/* Expenses Table list - OTHER EXPENSES */}
+      {otherExpenses.length > 0 && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <span className="p-1.5 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg">
+                💰
+              </span>
+              Pengeluaran Operasional Lainnya
+            </h2>
+            <span className="text-sm font-bold text-rose-600 dark:text-rose-400">
+              Total: {formatCurrency(aggregateOtherExpenses)}
+            </span>
+          </div>
+          
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm overflow-hidden font-medium">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs text-slate-500">
+                <thead className="text-[11px] text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/50">
+                  <tr>
+                    <th scope="col" className="px-6 py-4">ID Cost</th>
+                    <th scope="col" className="px-6 py-4">Kategori Cost</th>
+                    <th scope="col" className="px-6 py-4">Deskripsi Pembayaran</th>
+                    <th scope="col" className="px-6 py-4">Tanggal Pembulatan</th>
+                    <th scope="col" className="px-6 py-4 text-right">Nominal</th>
+                    <th scope="col" className="px-6 py-4">Catatan Supplier</th>
+                    <th scope="col" className="px-6 py-4 text-center">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-150 dark:divide-slate-800">
+                  {otherExpenses.map((exp) => (
+                    <tr key={exp.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
+                      <td className="px-6 py-4 font-mono font-bold text-slate-400">
+                        #EXP0{exp.id}
+                      </td>
+
+                      <td className="px-6 py-4 text-slate-950 dark:text-white font-bold">
+                        <span className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 font-bold block w-fit text-slate-700 dark:text-slate-300">
+                          {exp.expenseCategory}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4 text-slate-800 dark:text-slate-200">
+                        {exp.description}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        {exp.date}
+                      </td>
+
+                      <td className="px-6 py-4 text-right font-black text-rose-600">
+                        {formatCurrency(exp.amount)}
+                      </td>
+
+                      <td className="px-6 py-4 max-w-xs text-slate-400 truncate">
+                        {exp.notes || <span className="italic text-slate-300">Kosong</span>}
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleOpenEdit(exp)}
+                            className="p-1 px-2 text-slate-600 hover:text-slate-900 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded transition-colors"
+                          >
+                            <Edit2 size={12} />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(exp.id)}
+                            className="p-1 px-2 text-rose-500 hover:bg-rose-50 rounded transition-colors"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {filteredExpenses.length === 0 && (
         <div className="p-10 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 text-center space-y-3">
           <Receipt size={40} className="mx-auto text-slate-305" />
           <p className="text-sm text-slate-400 font-medium">Pengeluaran tidak ditemukan atau belum dicatatkan.</p>
@@ -279,7 +457,16 @@ export default function AdminExpenses({
                 <label className="block text-slate-500 dark:text-slate-400 mb-1">Kategori Pengeluaran</label>
                 <select
                   value={expenseCategory}
-                  onChange={(e) => setExpenseCategory(e.target.value)}
+                  onChange={(e) => {
+                    setExpenseCategory(e.target.value);
+                    // Reset fields when changing category
+                    if (e.target.value !== 'Pembelian Stok') {
+                      setMaterialName('');
+                      setQuantity(0);
+                      setUnit('pcs');
+                      setPricePerUnit(0);
+                    }
+                  }}
                   className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none cursor-pointer"
                 >
                   {categories.map((c) => (
@@ -288,60 +475,183 @@ export default function AdminExpenses({
                 </select>
               </div>
 
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1" htmlFor="description">Deskripsi Pengeluaran</label>
-                <input
-                  id="description"
-                  type="text"
-                  required
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Contoh: Belanja 5 dus paracetamol / Tagihan PLN Juni"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
-                />
-              </div>
+              {/* CONDITIONAL FIELDS FOR "Pembelian Stok" */}
+              {expenseCategory === 'Pembelian Stok' ? (
+                <>
+                  <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-100 dark:border-emerald-900/50">
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                      <span>📦</span>
+                      Form khusus untuk pembelian stok bahan - Total akan dihitung otomatis
+                    </p>
+                  </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Nominal (Rupiah)</label>
-                  <div className="relative">
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1" htmlFor="materialName">Nama Bahan <span className="text-rose-500">*</span></label>
                     <input
+                      id="materialName"
                       type="text"
                       required
-                      value={amount === 0 ? '' : amount.toLocaleString('id-ID')}
-                      onChange={(e) => handleAmountChange(e.target.value)}
-                      placeholder="Contoh: 15.000"
-                      className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none font-bold"
+                      value={materialName}
+                      onChange={(e) => setMaterialName(e.target.value)}
+                      placeholder="Contoh: Tepung Terigu Premium"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
                     />
-                    <div className="absolute left-3 top-2.5 font-bold text-slate-400">
-                      Rp
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Quantity <span className="text-rose-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        value={quantity === 0 ? '' : quantity.toLocaleString('id-ID')}
+                        onChange={(e) => handleQuantityChange(e.target.value)}
+                        placeholder="10"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Satuan</label>
+                      <select
+                        value={unit}
+                        onChange={(e) => setUnit(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none cursor-pointer"
+                      >
+                        <option value="pcs">Pcs</option>
+                        <option value="kg">Kg</option>
+                        <option value="gram">Gram</option>
+                        <option value="liter">Liter</option>
+                        <option value="ml">ml</option>
+                        <option value="box">Box</option>
+                        <option value="dus">Dus</option>
+                        <option value="pack">Pack</option>
+                        <option value="karung">Karung</option>
+                        <option value="lusin">Lusin</option>
+                        <option value="unit">Unit</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Harga/Satuan <span className="text-rose-500">*</span></label>
+                      <input
+                        type="text"
+                        required
+                        value={pricePerUnit === 0 ? '' : pricePerUnit.toLocaleString('id-ID')}
+                        onChange={(e) => handlePricePerUnitChange(e.target.value)}
+                        placeholder="5000"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none font-bold"
+                      />
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1">Tanggal Keluar</label>
-                  <input
-                    type="date"
-                    required
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
-                  />
-                </div>
-              </div>
+                  <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl border-2 border-emerald-200 dark:border-emerald-800">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Total Pembelian:</span>
+                      <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(amount)}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
+                      {quantity} {unit} × {formatCurrency(pricePerUnit)} = {formatCurrency(amount)}
+                    </p>
+                  </div>
 
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1" htmlFor="notes">Catatan & Supplier</label>
-                <textarea
-                  id="notes"
-                  rows={2}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Contoh: Dibeli dari agen sehat sejahtera dpt diskon 5%"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none font-normal"
-                />
-              </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Tanggal Pembelian</label>
+                      <input
+                        type="date"
+                        required
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Deskripsi Tambahan</label>
+                      <input
+                        type="text"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        placeholder="Opsional"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1" htmlFor="notes">Catatan & Supplier</label>
+                    <textarea
+                      id="notes"
+                      rows={2}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Contoh: Dibeli dari agen sehat sejahtera dpt diskon 5%"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none font-normal"
+                    />
+                  </div>
+                </>
+              ) : (
+                /* STANDARD FIELDS FOR OTHER EXPENSE CATEGORIES */
+                <>
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1" htmlFor="description">Deskripsi Pengeluaran</label>
+                    <input
+                      id="description"
+                      type="text"
+                      required
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      placeholder="Contoh: Belanja 5 dus paracetamol / Tagihan PLN Juni"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Nominal (Rupiah)</label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          required
+                          value={amount === 0 ? '' : amount.toLocaleString('id-ID')}
+                          onChange={(e) => handleAmountChange(e.target.value)}
+                          placeholder="Contoh: 15.000"
+                          className="w-full pl-10 pr-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none font-bold"
+                        />
+                        <div className="absolute left-3 top-2.5 font-bold text-slate-400">
+                          Rp
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Tanggal Keluar</label>
+                      <input
+                        type="date"
+                        required
+                        value={date}
+                        onChange={(e) => setDate(e.target.value)}
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1" htmlFor="notes">Catatan & Supplier</label>
+                    <textarea
+                      id="notes"
+                      rows={2}
+                      value={notes}
+                      onChange={(e) => setNotes(e.target.value)}
+                      placeholder="Contoh: Dibeli dari agen sehat sejahtera dpt diskon 5%"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none font-normal"
+                    />
+                  </div>
+                </>
+              )}
 
               <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-850">
                 <button
