@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Search, Filter, Plus, Minus, X, CheckSquare, Sparkles, MessageSquare, Compass, Phone, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { Product, Category, CartItem, PaymentMethod, Customer, Transaction, UMKMPreset, TransactionStatus } from '../types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface CustomerCatalogProps {
   products: Product[];
@@ -43,6 +45,7 @@ export default function CustomerCatalog({
   const setIsOpenCart = setIsOpenCartProp !== undefined ? setIsOpenCartProp : setLocalIsOpenCart;
 
   const [isOpenCheckout, setIsOpenCheckout] = useState(false);
+  const [bookingDate, setBookingDate] = useState('');
 
   // Checkout Form States
   const [custName, setCustName] = useState('');
@@ -52,6 +55,8 @@ export default function CustomerCatalog({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('QRIS');
   const [notes, setNotes] = useState('');
   const [checkoutCompletedCode, setCheckoutCompletedCode] = useState<string | null>(null);
+  const [completedTransaction, setCompletedTransaction] = useState<Transaction | null>(null);
+  const [completedCartItems, setCompletedCartItems] = useState<CartItem[]>([]);
 
   // Sync state values when currentUser logs/registers
   React.useEffect(() => {
@@ -116,12 +121,55 @@ export default function CustomerCatalog({
 
   const totalCartAmount = cart.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
 
+  // Helper: Check if cart contains booking-required categories
+  const requiresBookingDate = () => {
+    return cart.some(item => {
+      const category = categories.find(c => c.id === item.product.categoryId);
+      if (!category) return false;
+      const catNameLower = category.name.toLowerCase();
+      return catNameLower.includes('tiket') || 
+             catNameLower.includes('wisata') || 
+             catNameLower.includes('penginapan') ||
+             catNameLower.includes('hotel');
+    });
+  };
+
+  // Helper: Check if cart requires shipping
+  const requiresShipping = () => {
+    return cart.some(item => {
+      const category = categories.find(c => c.id === item.product.categoryId);
+      if (!category) return false;
+      const catNameLower = category.name.toLowerCase();
+      return catNameLower.includes('makanan') || catNameLower.includes('minuman');
+    });
+  };
+
   const handleCheckout = (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
+    // Validation for booking date
+    if (requiresBookingDate() && !bookingDate) {
+      alert('Silakan pilih tanggal booking untuk produk tiket/wisata/penginapan!');
+      return;
+    }
+
     // Generate random transaction code TRX-XXXX
     const randCode = 'TRX' + Math.floor(100 + Math.random() * 900);
+    const needsShipping = requiresShipping();
+
+    // Create items snapshot
+    const itemsSnapshot = cart.map(item => {
+      const category = categories.find(c => c.id === item.product.categoryId);
+      return {
+        productId: item.product.id,
+        productName: item.product.name,
+        categoryName: category?.name || 'Uncategorized',
+        quantity: item.quantity,
+        price: item.product.price,
+        subtotal: item.product.price * item.quantity
+      };
+    });
 
     // Create a new transition entry
     const newTx: Transaction = {
@@ -133,9 +181,14 @@ export default function CustomerCatalog({
       paymentMethod,
       notes: notes || 'Pemesanan katalog digital',
       createdAt: new Date().toISOString(),
-      shippingStatus: 'Dalam Antrean',
-      courierName: 'J&T Express',
-      trackingNumber: ''
+      ...(needsShipping && {
+        shippingStatus: 'Dalam Antrean',
+        courierName: 'J&T Express',
+        trackingNumber: ''
+      }),
+      ...(requiresBookingDate() && { bookingDate }),
+      requiresShipping: needsShipping,
+      items: itemsSnapshot
     };
 
     // Update product stock limits after successful purchase
@@ -150,9 +203,253 @@ export default function CustomerCatalog({
     });
 
     setTransactions(prev => [newTx, ...prev]);
+    setCompletedTransaction(newTx);
+    setCompletedCartItems([...cart]); // Save cart items before clearing
     setCart([]);
     setCheckoutCompletedCode(randCode);
+    setBookingDate('');
     setIsOpenCheckout(false);
+  };
+
+  // Print Invoice Function
+  const handlePrintInvoice = (transaction: Transaction, cartItems?: CartItem[]) => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPosition = 20;
+
+    // Use transaction.items if available, otherwise use cartItems
+    const itemsToUse = transaction.items || (cartItems ? cartItems.map(item => {
+      const category = categories.find(c => c.id === item.product.categoryId);
+      return {
+        productId: item.product.id,
+        productName: item.product.name,
+        categoryName: category?.name || 'Uncategorized',
+        quantity: item.quantity,
+        price: item.product.price,
+        subtotal: item.product.price * item.quantity
+      };
+    }) : []);
+
+    // Header with UMKM branding
+    doc.setFillColor(30, 58, 95);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text(currentPreset.businessName, pageWidth / 2, 30, { align: 'center' });
+    
+    doc.setFontSize(9);
+    doc.text(`${currentPreset.address} | ${currentPreset.phone}`, pageWidth / 2, 38, { align: 'center' });
+    doc.text(`${currentPreset.industry}`, pageWidth / 2, 44, { align: 'center' });
+
+    yPosition = 60;
+
+    // Invoice Info Box
+    doc.setFillColor(240, 240, 240);
+    doc.roundedRect(14, yPosition, pageWidth - 28, 35, 2, 2, 'F');
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NO. TRANSAKSI:', 18, yPosition + 8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(transaction.transactionCode, 18, yPosition + 14);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('TANGGAL:', 18, yPosition + 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(new Date(transaction.createdAt).toLocaleDateString('id-ID', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }), 18, yPosition + 28);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('STATUS:', pageWidth - 70, yPosition + 8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(16, 185, 129);
+    doc.text(transaction.status.toUpperCase(), pageWidth - 70, yPosition + 14);
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text('METODE BAYAR:', pageWidth - 70, yPosition + 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(transaction.paymentMethod, pageWidth - 70, yPosition + 28);
+
+    yPosition += 45;
+
+    // Customer Info
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INFORMASI PELANGGAN', 14, yPosition);
+    yPosition += 6;
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, yPosition, pageWidth - 14, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Nama:', 14, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(custName || currentUser?.name || '-', 45, yPosition);
+    
+    yPosition += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text('No. Telepon:', 14, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(custPhone || currentUser?.phone || '-', 45, yPosition);
+    
+    if (transaction.requiresShipping) {
+      yPosition += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Alamat Kirim:', 14, yPosition);
+      doc.setFont('helvetica', 'normal');
+      const address = custAddress || currentUser?.address || '-';
+      const splitAddress = doc.splitTextToSize(address, pageWidth - 60);
+      doc.text(splitAddress, 45, yPosition);
+      yPosition += (splitAddress.length - 1) * 5;
+    }
+
+    if (transaction.bookingDate) {
+      yPosition += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Tanggal Booking:', 14, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(239, 68, 68);
+      doc.text(new Date(transaction.bookingDate).toLocaleDateString('id-ID', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
+      }), 45, yPosition);
+      doc.setTextColor(0, 0, 0);
+    }
+
+    yPosition += 15;
+
+    // Items Table
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RINCIAN PEMBELIAN', 14, yPosition);
+    yPosition += 6;
+
+    const itemsData = itemsToUse.map((item, index) => {
+      return [
+        (index + 1).toString(),
+        item.productName,
+        item.categoryName,
+        item.quantity.toString(),
+        formatCurrency(item.price),
+        formatCurrency(item.subtotal)
+      ];
+    });
+
+    (doc as any).autoTable({
+      startY: yPosition,
+      head: [['No', 'Nama Produk', 'Kategori', 'Qty', 'Harga Satuan', 'Subtotal']],
+      body: itemsData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [30, 58, 95],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: [50, 50, 50]
+      },
+      columnStyles: {
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 15, halign: 'center' },
+        4: { cellWidth: 30, halign: 'right' },
+        5: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+      },
+      margin: { left: 14, right: 14 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+    // Total Box
+    doc.setFillColor(30, 58, 95);
+    doc.roundedRect(pageWidth - 90, yPosition, 76, 20, 2, 2, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL PEMBAYARAN:', pageWidth - 85, yPosition + 8);
+    doc.setFontSize(14);
+    doc.text(formatCurrency(transaction.totalAmount), pageWidth - 20, yPosition + 15, { align: 'right' });
+
+    yPosition += 30;
+
+    // Notes Section
+    if (transaction.notes) {
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Catatan:', 14, yPosition);
+      doc.setFont('helvetica', 'italic');
+      doc.text(transaction.notes, 14, yPosition + 5);
+      yPosition += 15;
+    }
+
+    // Shipping Info or Digital Invoice Info
+    yPosition += 10;
+    if (transaction.requiresShipping) {
+      doc.setFillColor(240, 253, 244);
+      doc.roundedRect(14, yPosition, pageWidth - 28, 20, 2, 2, 'F');
+      doc.setTextColor(16, 185, 129);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('📦 PENGIRIMAN', 18, yPosition + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+      doc.text('Pesanan Anda akan segera diproses dan dikirim ke alamat yang tertera.', 18, yPosition + 12);
+      doc.text(`Kurir: ${transaction.courierName || 'J&T Express'}`, 18, yPosition + 17);
+    } else {
+      doc.setFillColor(254, 249, 195);
+      doc.roundedRect(14, yPosition, pageWidth - 28, 20, 2, 2, 'F');
+      doc.setTextColor(146, 64, 14);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('✓ INVOICE DIGITAL', 18, yPosition + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+      doc.text('Ini adalah bukti pembelian digital. Tidak ada pengiriman fisik untuk produk ini.', 18, yPosition + 12);
+      doc.text('Simpan invoice ini sebagai bukti transaksi Anda.', 18, yPosition + 17);
+    }
+
+    yPosition += 30;
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(
+      'Terima kasih telah berbelanja di ' + currentPreset.businessName,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 15,
+      { align: 'center' }
+    );
+    doc.text(
+      'Invoice ini dicetak otomatis oleh SIUPIN (Sistem Informasi UMKM Pintar)',
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: 'center' }
+    );
+
+    // Save PDF
+    const fileName = `Invoice-${transaction.transactionCode}-${currentPreset.businessName.replace(/\s+/g, '-')}.pdf`;
+    doc.save(fileName);
   };
 
   return (
@@ -530,13 +827,42 @@ export default function CustomerCatalog({
               <div>
                 <label className="block text-slate-500 mb-1">Alamat Penerimaan Kiriman</label>
                 <textarea
-                  required
+                  required={requiresShipping()}
                   rows={2}
                   value={custAddress}
                   onChange={(e) => setCustAddress(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-1 dark:bg-slate-90 font-normal inner-input"
+                  placeholder={requiresShipping() ? "Alamat lengkap untuk pengiriman" : "Alamat (opsional)"}
                 />
+                {!requiresShipping() && (
+                  <p className="text-[10px] text-amber-600 mt-1 flex items-center gap-1">
+                    <span>⚠️</span>
+                    Produk yang Anda beli tidak memerlukan pengiriman fisik
+                  </p>
+                )}
               </div>
+
+              {/* Booking Date for Tickets/Tourism/Hotels */}
+              {requiresBookingDate() && (
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800 space-y-2">
+                  <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                    <span className="text-base">🎫</span>
+                    <span className="font-bold text-xs">Tanggal Booking Diperlukan</span>
+                  </div>
+                  <label className="block text-slate-700 dark:text-slate-300 mb-1 text-xs font-semibold">Pilih Tanggal Booking/Kunjungan *</label>
+                  <input
+                    type="date"
+                    required
+                    value={bookingDate}
+                    onChange={(e) => setBookingDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border-2 border-amber-300 dark:border-amber-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white dark:bg-slate-800 font-bold"
+                  />
+                  <p className="text-[10px] text-amber-700 dark:text-amber-400">
+                    Untuk produk tiket/wisata/penginapan, silakan tentukan tanggal Anda akan menggunakan layanan ini.
+                  </p>
+                </div>
+              )}
 
               {/* Payment Methods Options requested */}
               <div>
@@ -598,17 +924,19 @@ export default function CustomerCatalog({
       )}
 
       {/* SUCCESS CONFIRMATION MODAL */}
-      {checkoutCompletedCode && (
+      {checkoutCompletedCode && completedTransaction && (
         <div 
           onClick={() => {
             setCheckoutCompletedCode(null);
+            setCompletedTransaction(null);
+            setCompletedCartItems([]);
             setActiveTab('order-history');
           }}
           className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in font-medium cursor-pointer"
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 max-w-sm w-full p-6 text-center shadow-2xl space-y-4 cursor-default"
+            className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 max-w-md w-full p-6 text-center shadow-2xl space-y-4 cursor-default"
           >
             <div className="w-14 h-14 bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 rounded-full flex items-center justify-center mx-auto text-3xl">
               ✓
@@ -620,19 +948,58 @@ export default function CustomerCatalog({
                 #{checkoutCompletedCode}
               </span>
             </div>
-            <p className="text-xs text-slate-400 font-normal">
-              Pesanan Anda saat ini tercatat {paymentMethod === 'Cash' ? 'Menunggu Pembayaran' : 'Telah Dibayar'} dan akan segera diproses oleh kasir apotek admin. Anda dapat melacaknya langsung di tab "Riwayat Pesanan".
-            </p>
-            <div className="pt-2">
+
+            {/* Info based on shipping requirement */}
+            {completedTransaction.requiresShipping ? (
+              <p className="text-xs text-slate-400 font-normal">
+                Pesanan Anda saat ini tercatat {paymentMethod === 'Cash' ? 'Menunggu Pembayaran' : 'Telah Dibayar'} dan akan segera diproses untuk pengiriman. Lacak pesanan di "Riwayat Pesanan".
+              </p>
+            ) : (
+              <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                <p className="text-xs text-amber-700 dark:text-amber-400 font-semibold">
+                  📄 Produk yang Anda beli tidak memerlukan pengiriman fisik. Silakan cetak invoice sebagai bukti pembelian Anda.
+                </p>
+              </div>
+            )}
+
+            {completedTransaction.bookingDate && (
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800">
+                <p className="text-xs text-blue-700 dark:text-blue-400 font-semibold">
+                  🎫 Tanggal Booking: {new Date(completedTransaction.bookingDate).toLocaleDateString('id-ID', { 
+                    weekday: 'long',
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric'
+                  })}
+                </p>
+              </div>
+            )}
+
+            <div className="pt-2 space-y-2">
+              {/* Print Invoice Button for non-shipping products */}
+              {!completedTransaction.requiresShipping && (
+                <button
+                  onClick={() => {
+                    handlePrintInvoice(completedTransaction, completedCartItems);
+                  }}
+                  className="w-full py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer transition flex items-center justify-center gap-2"
+                >
+                  <span>🖨️</span>
+                  Cetak Invoice Pembelian (PDF)
+                </button>
+              )}
+
               <button
                 onClick={() => {
                   setCheckoutCompletedCode(null);
+                  setCompletedTransaction(null);
+                  setCompletedCartItems([]);
                   setActiveTab('order-history');
                 }}
                 className="w-full py-2.5 text-white font-bold text-xs rounded-xl shadow-md cursor-pointer"
                 style={{ backgroundColor: currentPreset.primaryColor }}
               >
-                Kunjungi Riwayat Pesanan
+                {completedTransaction.requiresShipping ? 'Lacak Pesanan di Riwayat' : 'Lihat Riwayat Pembelian'}
               </button>
             </div>
           </div>

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { BarChart3, TrendingUp, TrendingDown, Landmark, Sparkles, Filter, Plus, Calendar, Search, FileSpreadsheet } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts';
 import { Transaction, Expense, IncomeRecord, UMKMPreset } from '../types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface AdminFinancialReportProps {
   transactions: Transaction[];
@@ -116,6 +118,381 @@ export default function AdminFinancialReport({
     i.description.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Export PDF Function with detailed report
+  const handleExportPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    let yPosition = 20;
+
+    // Helper function to check if we need a new page
+    const checkAddPage = (neededSpace: number) => {
+      if (yPosition + neededSpace > pageHeight - 20) {
+        doc.addPage();
+        yPosition = 20;
+        return true;
+      }
+      return false;
+    };
+
+    // Header
+    doc.setFillColor(30, 58, 95); // Navy blue
+    doc.rect(0, 0, pageWidth, 40, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('LAPORAN KEUANGAN', pageWidth / 2, 15, { align: 'center' });
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text(currentPreset.businessName, pageWidth / 2, 25, { align: 'center' });
+    
+    doc.setFontSize(9);
+    doc.text(`Sektor: ${currentPreset.industry}`, pageWidth / 2, 32, { align: 'center' });
+
+    yPosition = 50;
+
+    // Report Info
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, yPosition);
+    doc.text(`Waktu: ${new Date().toLocaleTimeString('id-ID')}`, 14, yPosition + 5);
+    doc.text(`Alamat: ${currentPreset.address}`, 14, yPosition + 10);
+    doc.text(`Telepon: ${currentPreset.phone}`, 14, yPosition + 15);
+    
+    yPosition += 25;
+
+    // Section 1: RINGKASAN KEUANGAN
+    checkAddPage(60);
+    doc.setFillColor(30, 58, 95);
+    doc.rect(14, yPosition, pageWidth - 28, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RINGKASAN KEUANGAN', 16, yPosition + 5.5);
+    
+    yPosition += 12;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+
+    // Financial Summary Boxes
+    const boxHeight = 20;
+    const boxWidth = (pageWidth - 42) / 3;
+    
+    // Total Income Box
+    doc.setDrawColor(200, 200, 200);
+    doc.setFillColor(240, 253, 244);
+    doc.roundedRect(14, yPosition, boxWidth, boxHeight, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('TOTAL PENDAPATAN', 16, yPosition + 5);
+    doc.setFontSize(12);
+    doc.setTextColor(16, 185, 129);
+    doc.text(formatCurrency(totalIncome), 16, yPosition + 13);
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text('(Income)', 16, yPosition + 17);
+
+    // Total Expense Box
+    doc.setFillColor(254, 242, 242);
+    doc.roundedRect(14 + boxWidth + 4, yPosition, boxWidth, boxHeight, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    doc.text('TOTAL PENGELUARAN', 16 + boxWidth + 4, yPosition + 5);
+    doc.setFontSize(12);
+    doc.setTextColor(239, 68, 68);
+    doc.text(formatCurrency(totalExpense), 16 + boxWidth + 4, yPosition + 13);
+    doc.setFontSize(7);
+    doc.setTextColor(100, 100, 100);
+    doc.text('(Expense)', 16 + boxWidth + 4, yPosition + 17);
+
+    // Net Profit Box
+    doc.setFillColor(30, 58, 95);
+    doc.roundedRect(14 + (boxWidth + 4) * 2, yPosition, boxWidth, boxHeight, 2, 2, 'FD');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(224, 242, 254);
+    doc.text('LABA BERSIH', 16 + (boxWidth + 4) * 2, yPosition + 5);
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    doc.text(formatCurrency(netProfit), 16 + (boxWidth + 4) * 2, yPosition + 13);
+    doc.setFontSize(7);
+    doc.text('(Net Profit)', 16 + (boxWidth + 4) * 2, yPosition + 17);
+
+    yPosition += boxHeight + 15;
+
+    // Section 2: DETAIL PENDAPATAN (INCOME RECORDS)
+    checkAddPage(80);
+    doc.setFillColor(16, 185, 129);
+    doc.rect(14, yPosition, pageWidth - 28, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DETAIL PENDAPATAN (INCOME)', 16, yPosition + 5.5);
+    
+    yPosition += 12;
+
+    // Income Table
+    const incomeTableData = combinedIncomesList.map((item, index) => [
+      (index + 1).toString(),
+      item.date,
+      item.description,
+      formatCurrency(item.amount),
+      item.transactionId ? 'Penjualan Online' : 'Manual'
+    ]);
+
+    (doc as any).autoTable({
+      startY: yPosition,
+      head: [['No', 'Tanggal', 'Deskripsi', 'Jumlah', 'Sumber']],
+      body: incomeTableData,
+      theme: 'grid',
+      headStyles: {
+        fillColor: [16, 185, 129],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 8
+      },
+      bodyStyles: {
+        fontSize: 8,
+        textColor: [50, 50, 50]
+      },
+      columnStyles: {
+        0: { cellWidth: 10, halign: 'center' },
+        1: { cellWidth: 25 },
+        2: { cellWidth: 80 },
+        3: { cellWidth: 35, halign: 'right', fontStyle: 'bold' },
+        4: { cellWidth: 30, halign: 'center' }
+      },
+      margin: { left: 14, right: 14 },
+      didDrawPage: (data: any) => {
+        yPosition = data.cursor.y;
+      }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+    // Income Summary
+    checkAddPage(20);
+    doc.setFillColor(240, 253, 244);
+    doc.rect(14, yPosition, pageWidth - 28, 12, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(16, 185, 129);
+    doc.text('TOTAL PENDAPATAN:', pageWidth - 80, yPosition + 8);
+    doc.text(formatCurrency(totalIncome), pageWidth - 20, yPosition + 8, { align: 'right' });
+    
+    yPosition += 20;
+
+    // Section 3: DETAIL PENGELUARAN (EXPENSES)
+    checkAddPage(80);
+    doc.setFillColor(239, 68, 68);
+    doc.rect(14, yPosition, pageWidth - 28, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DETAIL PENGELUARAN (EXPENSES)', 16, yPosition + 5.5);
+    
+    yPosition += 12;
+
+    // Separate Stock Purchases and Other Expenses
+    const stockPurchases = expenses.filter(e => e.expenseCategory === 'Pembelian Stok');
+    const otherExpenses = expenses.filter(e => e.expenseCategory !== 'Pembelian Stok');
+
+    // Stock Purchases Table (if any)
+    if (stockPurchases.length > 0) {
+      doc.setFontSize(9);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.text('A. Pembelian Stok Bahan', 14, yPosition);
+      yPosition += 5;
+
+      const stockTableData = stockPurchases.map((exp, index) => [
+        (index + 1).toString(),
+        exp.date,
+        exp.materialName || '-',
+        `${exp.quantity || 0} ${exp.unit || ''}`,
+        formatCurrency(exp.pricePerUnit || 0),
+        formatCurrency(exp.amount),
+        exp.notes || '-'
+      ]);
+
+      (doc as any).autoTable({
+        startY: yPosition,
+        head: [['No', 'Tanggal', 'Nama Bahan', 'Qty', 'Harga/Unit', 'Total', 'Catatan']],
+        body: stockTableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [16, 185, 129],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 7
+        },
+        bodyStyles: {
+          fontSize: 7,
+          textColor: [50, 50, 50]
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 40 },
+          3: { cellWidth: 18, halign: 'center' },
+          4: { cellWidth: 25, halign: 'right' },
+          5: { cellWidth: 28, halign: 'right', fontStyle: 'bold' },
+          6: { cellWidth: 37 }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+      
+      // Stock Subtotal
+      const stockTotal = stockPurchases.reduce((sum, e) => sum + e.amount, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('Subtotal Pembelian Stok:', pageWidth - 70, yPosition);
+      doc.setTextColor(239, 68, 68);
+      doc.text(formatCurrency(stockTotal), pageWidth - 20, yPosition, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      yPosition += 10;
+    }
+
+    // Other Expenses Table
+    checkAddPage(80);
+    if (otherExpenses.length > 0) {
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('B. Pengeluaran Operasional Lainnya', 14, yPosition);
+      yPosition += 5;
+
+      const expenseTableData = otherExpenses.map((exp, index) => [
+        (index + 1).toString(),
+        exp.date,
+        exp.expenseCategory,
+        exp.description,
+        formatCurrency(exp.amount),
+        exp.notes || '-'
+      ]);
+
+      (doc as any).autoTable({
+        startY: yPosition,
+        head: [['No', 'Tanggal', 'Kategori', 'Deskripsi', 'Jumlah', 'Catatan']],
+        body: expenseTableData,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [239, 68, 68],
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          fontSize: 8
+        },
+        bodyStyles: {
+          fontSize: 8,
+          textColor: [50, 50, 50]
+        },
+        columnStyles: {
+          0: { cellWidth: 10, halign: 'center' },
+          1: { cellWidth: 22 },
+          2: { cellWidth: 35 },
+          3: { cellWidth: 55 },
+          4: { cellWidth: 30, halign: 'right', fontStyle: 'bold' },
+          5: { cellWidth: 28 }
+        },
+        margin: { left: 14, right: 14 }
+      });
+
+      yPosition = (doc as any).lastAutoTable.finalY + 8;
+      
+      // Other Expenses Subtotal
+      const otherTotal = otherExpenses.reduce((sum, e) => sum + e.amount, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      doc.text('Subtotal Pengeluaran Lainnya:', pageWidth - 70, yPosition);
+      doc.setTextColor(239, 68, 68);
+      doc.text(formatCurrency(otherTotal), pageWidth - 20, yPosition, { align: 'right' });
+      doc.setTextColor(0, 0, 0);
+      yPosition += 10;
+    }
+
+    // Total Expense Summary
+    checkAddPage(20);
+    doc.setFillColor(254, 242, 242);
+    doc.rect(14, yPosition, pageWidth - 28, 12, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(239, 68, 68);
+    doc.text('TOTAL PENGELUARAN:', pageWidth - 80, yPosition + 8);
+    doc.text(formatCurrency(totalExpense), pageWidth - 20, yPosition + 8, { align: 'right' });
+    
+    yPosition += 20;
+
+    // Section 4: ANALISIS LABA RUGI
+    checkAddPage(50);
+    doc.setFillColor(30, 58, 95);
+    doc.rect(14, yPosition, pageWidth - 28, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('ANALISIS LABA RUGI', 16, yPosition + 5.5);
+    
+    yPosition += 15;
+    doc.setTextColor(0, 0, 0);
+
+    // Profit/Loss Table
+    const profitMargin = totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(2) : '0.00';
+    const profitStatus = netProfit >= 0 ? 'LABA' : 'RUGI';
+    
+    (doc as any).autoTable({
+      startY: yPosition,
+      body: [
+        ['Total Pendapatan (Income)', formatCurrency(totalIncome)],
+        ['Total Pengeluaran (Expense)', formatCurrency(totalExpense)],
+        ['', ''],
+        [{ content: 'LABA BERSIH (Net Profit)', styles: { fontStyle: 'bold', fontSize: 10 } }, 
+         { content: formatCurrency(netProfit), styles: { fontStyle: 'bold', fontSize: 10, textColor: netProfit >= 0 ? [16, 185, 129] : [239, 68, 68] } }],
+        ['Margin Laba', `${profitMargin}%`],
+        ['Status', profitStatus]
+      ],
+      theme: 'plain',
+      bodyStyles: {
+        fontSize: 9
+      },
+      columnStyles: {
+        0: { cellWidth: 120, fontStyle: 'bold' },
+        1: { cellWidth: 60, halign: 'right' }
+      },
+      margin: { left: 14, right: 14 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 15;
+
+    // Footer
+    const totalPages = (doc as any).internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `Halaman ${i} dari ${totalPages}`,
+        pageWidth / 2,
+        pageHeight - 10,
+        { align: 'center' }
+      );
+      doc.text(
+        `Dicetak oleh ${currentPreset.businessName} - SIUPIN (Sistem Informasi UMKM Pintar)`,
+        pageWidth / 2,
+        pageHeight - 5,
+        { align: 'center' }
+      );
+    }
+
+    // Save PDF
+    const fileName = `Laporan-Keuangan-${currentPreset.businessName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(fileName);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header and buttons */}
@@ -137,10 +514,10 @@ export default function AdminFinancialReport({
             <Plus size={15} /> Tambah Pemasukan Manual
           </button>
           <button
-            onClick={() => alert('Laporan keuangan berhasil diexport ke format Excel/CSV! (Pelajaran Simulator)')}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs text-slate-700 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-slate-200 font-bold rounded-xl cursor-pointer"
+            onClick={handleExportPDF}
+            className="flex items-center gap-2 px-3.5 py-2 text-xs text-slate-700 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-slate-200 font-bold rounded-xl cursor-pointer transition"
           >
-            <FileSpreadsheet size={15} /> Export Report
+            <FileSpreadsheet size={15} /> Export Laporan PDF
           </button>
         </div>
       </div>

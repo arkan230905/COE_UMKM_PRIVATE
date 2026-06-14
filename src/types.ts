@@ -74,6 +74,18 @@ export interface Transaction {
   shippingStatus?: 'Dalam Antrean' | 'Sedang Dikemas' | 'Sedang Dikirim' | 'Sampai Tujuan';
   courierName?: string;
   trackingNumber?: string;
+  // Booking parameters for tickets/tourism
+  bookingDate?: string; // For ticket/wisata/penginapan categories
+  requiresShipping?: boolean; // true for makanan/minuman, false for others
+  // Snapshot of purchased items
+  items?: {
+    productId: number;
+    productName: string;
+    categoryName: string;
+    quantity: number;
+    price: number;
+    subtotal: number;
+  }[];
 }
 
 // 6. TransactionItem Entity (mirrors transaction_items MySQL table)
@@ -85,6 +97,10 @@ export interface TransactionItem {
   price: number;
   subtotal: number;
   createdAt: string;
+  // Snapshot of product details at time of purchase
+  productName?: string;
+  productDescription?: string;
+  categoryName?: string;
 }
 
 // 7. Expense Entity (mirrors expenses MySQL table)

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { ListOrdered, Search, Eye, FileText, CheckCircle2, Clock, XCircle, ShoppingBag, Landmark, AlertCircle } from 'lucide-react';
 import { Transaction, Customer, UMKMPreset } from '../types';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 interface CustomerOrdersProps {
   transactions: Transaction[];
@@ -37,6 +39,239 @@ export default function CustomerOrders({
       default:
         return null;
     }
+  };
+
+  // Print Invoice Function (same as CustomerCatalog)
+  const handlePrintInvoice = (transaction: Transaction) => {
+    if (!transaction.items || transaction.items.length === 0) {
+      alert('Data item pembelian tidak tersedia untuk transaksi ini.');
+      return;
+    }
+
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPosition = 20;
+
+    // Header with UMKM branding
+    doc.setFillColor(30, 58, 95);
+    doc.rect(0, 0, pageWidth, 50, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INVOICE', pageWidth / 2, 20, { align: 'center' });
+    
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'normal');
+    doc.text(currentPreset.businessName, pageWidth / 2, 30, { align: 'center' });
+    
+    doc.setFontSize(9);
+    doc.text(`${currentPreset.address} | ${currentPreset.phone}`, pageWidth / 2, 38, { align: 'center' });
+    doc.text(`${currentPreset.industry}`, pageWidth / 2, 44, { align: 'center' });
+
+    yPosition = 60;
+
+    // Invoice Info Box
+    doc.setFillColor(240, 240, 240);
+    doc.roundedRect(14, yPosition, pageWidth - 28, 35, 2, 2, 'F');
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text('NO. TRANSAKSI:', 18, yPosition + 8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(transaction.transactionCode, 18, yPosition + 14);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('TANGGAL:', 18, yPosition + 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(new Date(transaction.createdAt).toLocaleDateString('id-ID', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }), 18, yPosition + 28);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('STATUS:', pageWidth - 70, yPosition + 8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(16, 185, 129);
+    doc.text(transaction.status.toUpperCase(), pageWidth - 70, yPosition + 14);
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'bold');
+    doc.text('METODE BAYAR:', pageWidth - 70, yPosition + 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(transaction.paymentMethod, pageWidth - 70, yPosition + 28);
+
+    yPosition += 45;
+
+    // Customer Info
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INFORMASI PELANGGAN', 14, yPosition);
+    yPosition += 6;
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, yPosition, pageWidth - 14, yPosition);
+    yPosition += 8;
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Nama:', 14, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(currentUser.name, 45, yPosition);
+    
+    yPosition += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.text('No. Telepon:', 14, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(currentUser.phone, 45, yPosition);
+    
+    if (transaction.requiresShipping) {
+      yPosition += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Alamat Kirim:', 14, yPosition);
+      doc.setFont('helvetica', 'normal');
+      const address = currentUser.address;
+      const splitAddress = doc.splitTextToSize(address, pageWidth - 60);
+      doc.text(splitAddress, 45, yPosition);
+      yPosition += (splitAddress.length - 1) * 5;
+    }
+
+    if (transaction.bookingDate) {
+      yPosition += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.text('Tanggal Booking:', 14, yPosition);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(239, 68, 68);
+      doc.text(new Date(transaction.bookingDate).toLocaleDateString('id-ID', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric'
+      }), 45, yPosition);
+      doc.setTextColor(0, 0, 0);
+    }
+
+    yPosition += 15;
+
+    // Items Table
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RINCIAN PEMBELIAN', 14, yPosition);
+    yPosition += 6;
+
+    const itemsData = transaction.items.map((item, index) => {
+      return [
+        (index + 1).toString(),
+        item.productName,
+        item.categoryName,
+        item.quantity.toString(),
+        formatCurrency(item.price),
+        formatCurrency(item.subtotal)
+      ];
+    });
+
+    (doc as any).autoTable({
+      startY: yPosition,
+      head: [['No', 'Nama Produk', 'Kategori', 'Qty', 'Harga Satuan', 'Subtotal']],
+      body: itemsData,
+      theme: 'striped',
+      headStyles: {
+        fillColor: [30, 58, 95],
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 9
+      },
+      bodyStyles: {
+        fontSize: 9,
+        textColor: [50, 50, 50]
+      },
+      columnStyles: {
+        0: { cellWidth: 12, halign: 'center' },
+        1: { cellWidth: 60 },
+        2: { cellWidth: 35 },
+        3: { cellWidth: 15, halign: 'center' },
+        4: { cellWidth: 30, halign: 'right' },
+        5: { cellWidth: 30, halign: 'right', fontStyle: 'bold' }
+      },
+      margin: { left: 14, right: 14 }
+    });
+
+    yPosition = (doc as any).lastAutoTable.finalY + 10;
+
+    // Total Box
+    doc.setFillColor(30, 58, 95);
+    doc.roundedRect(pageWidth - 90, yPosition, 76, 20, 2, 2, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL PEMBAYARAN:', pageWidth - 85, yPosition + 8);
+    doc.setFontSize(14);
+    doc.text(formatCurrency(transaction.totalAmount), pageWidth - 20, yPosition + 15, { align: 'right' });
+
+    yPosition += 30;
+
+    // Notes Section
+    if (transaction.notes) {
+      doc.setTextColor(0, 0, 0);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Catatan:', 14, yPosition);
+      doc.setFont('helvetica', 'italic');
+      doc.text(transaction.notes, 14, yPosition + 5);
+      yPosition += 15;
+    }
+
+    // Shipping Info or Digital Invoice Info
+    yPosition += 10;
+    if (transaction.requiresShipping) {
+      doc.setFillColor(240, 253, 244);
+      doc.roundedRect(14, yPosition, pageWidth - 28, 20, 2, 2, 'F');
+      doc.setTextColor(16, 185, 129);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('📦 PENGIRIMAN', 18, yPosition + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+      doc.text('Pesanan Anda akan segera diproses dan dikirim ke alamat yang tertera.', 18, yPosition + 12);
+      doc.text(`Kurir: ${transaction.courierName || 'J&T Express'}`, 18, yPosition + 17);
+    } else {
+      doc.setFillColor(254, 249, 195);
+      doc.roundedRect(14, yPosition, pageWidth - 28, 20, 2, 2, 'F');
+      doc.setTextColor(146, 64, 14);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('✓ INVOICE DIGITAL', 18, yPosition + 6);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(50, 50, 50);
+      doc.text('Ini adalah bukti pembelian digital. Tidak ada pengiriman fisik untuk produk ini.', 18, yPosition + 12);
+      doc.text('Simpan invoice ini sebagai bukti transaksi Anda.', 18, yPosition + 17);
+    }
+
+    yPosition += 30;
+
+    // Footer
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text(
+      'Terima kasih telah berbelanja di ' + currentPreset.businessName,
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 15,
+      { align: 'center' }
+    );
+    doc.text(
+      'Invoice ini dicetak otomatis oleh SIUPIN (Sistem Informasi UMKM Pintar)',
+      pageWidth / 2,
+      doc.internal.pageSize.getHeight() - 10,
+      { align: 'center' }
+    );
+
+    // Save PDF
+    const fileName = `Invoice-${transaction.transactionCode}-${currentPreset.businessName.replace(/\s+/g, '-')}.pdf`;
+    doc.save(fileName);
   };
 
   // Only load transactions belonging to current logged in customer user
@@ -310,6 +545,19 @@ export default function CustomerOrders({
             </div>
 
             <div className="mt-6 flex justify-end gap-3 text-xs">
+              {/* Print Invoice Button */}
+              {!selectedTx.requiresShipping && selectedTx.items && selectedTx.items.length > 0 && (
+                <button
+                  onClick={() => {
+                    handlePrintInvoice(selectedTx);
+                  }}
+                  className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800 text-white font-bold rounded-lg cursor-pointer transition flex items-center gap-2"
+                >
+                  <span>🖨️</span>
+                  Cetak Invoice (PDF)
+                </button>
+              )}
+              
               <button
                 onClick={() => setSelectedTx(null)}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-705 dark:text-slate-200 font-semibold rounded-lg cursor-pointer"
