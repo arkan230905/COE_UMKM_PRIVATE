@@ -263,8 +263,23 @@ export default function App() {
 
   useEffect(() => {
     if (currentPreset.id !== 'placeholder') {
-      localStorage.setItem(`umkm_${currentPreset.id}_products`, JSON.stringify(products));
-      console.log('Products saved to localStorage:', products);
+      try {
+        const productsJson = JSON.stringify(products);
+        const sizeKB = new Blob([productsJson]).size / 1024;
+        console.log(`Products array size: ${sizeKB.toFixed(2)} KB`);
+        
+        if (sizeKB > 4000) {
+          console.warn('⚠️ Products data is very large (>4MB). Consider reducing image sizes.');
+        }
+        
+        localStorage.setItem(`umkm_${currentPreset.id}_products`, productsJson);
+        console.log('✓ Products saved to localStorage:', products.length, 'items');
+      } catch (error) {
+        console.error('❌ Error saving products to localStorage:', error);
+        if (error instanceof DOMException && error.name === 'QuotaExceededError') {
+          alert('PERINGATAN: Penyimpanan penuh!\n\nData produk terlalu besar (mungkin karena image).\n\nSolusi:\n1. Hapus beberapa produk\n2. Gunakan image yang lebih kecil\n3. Gunakan URL image eksternal');
+        }
+      }
     }
   }, [products, currentPreset]);
 

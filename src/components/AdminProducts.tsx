@@ -6,10 +6,12 @@ import JsBarcode from 'jsbarcode';
 // Barcode Image Component
 const BarcodeImage = ({ value }: { value: string }) => {
   const svgRef = useRef<SVGSVGElement>(null);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     if (svgRef.current && value) {
       try {
+        setError(false);
         JsBarcode(svgRef.current, value, {
           format: 'CODE128',
           width: 2,
@@ -18,11 +20,20 @@ const BarcodeImage = ({ value }: { value: string }) => {
           fontSize: 10,
           margin: 2,
         });
-      } catch (error) {
-        console.error('Barcode generation error:', error);
+      } catch (err) {
+        console.error('Barcode generation error:', err);
+        setError(true);
       }
     }
   }, [value]);
+
+  if (error) {
+    return (
+      <span className="font-mono text-xs font-bold text-rose-500 bg-rose-100 dark:bg-rose-950/40 px-2 py-1 rounded">
+        Invalid Barcode
+      </span>
+    );
+  }
 
   return <svg ref={svgRef} />;
 };
@@ -57,6 +68,42 @@ export default function AdminProducts({
   const [imageFile, setImageFile] = useState<string>('');
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState('');
+  const [storageWarning, setStorageWarning] = useState('');
+
+  // Check localStorage usage on modal open
+  React.useEffect(() => {
+    if (isOpenModal) {
+      try {
+        // Calculate current storage usage
+        let totalSize = 0;
+        for (let key in localStorage) {
+          if (localStorage.hasOwnProperty(key)) {
+            totalSize += localStorage[key].length + key.length;
+          }
+        }
+        
+        const usedMB = totalSize / 1024 / 1024;
+        const limitMB = 5; // Most browsers have ~5-10MB limit
+        const percentUsed = (usedMB / limitMB) * 100;
+        
+        if (percentUsed > 80) {
+          setStorageWarning(
+            `⚠️ Penyimpanan hampir penuh (${percentUsed.toFixed(0)}%)! ` +
+            `Sebaiknya hapus beberapa produk lama atau jangan upload gambar terlalu besar.`
+          );
+        } else if (percentUsed > 60) {
+          setStorageWarning(
+            `ℹ️ Penyimpanan terpakai ${percentUsed.toFixed(0)}%. ` +
+            `Gunakan gambar kecil (<200KB) untuk produk baru.`
+          );
+        } else {
+          setStorageWarning('');
+        }
+      } catch (e) {
+        console.error('Error checking storage:', e);
+      }
+    }
+  }, [isOpenModal]);
 
   // Generate unique barcode
   const generateBarcode = (): string => {
@@ -124,42 +171,62 @@ export default function AdminProducts({
     e.preventDefault();
     setError('');
 
+    console.log('=== PRODUCT FORM SUBMIT DEBUG ===');
+    console.log('Name:', name);
+    console.log('Slug:', slug);
+    console.log('Category ID:', categoryId);
+    console.log('Price:', price);
+    console.log('Stock:', stock);
+
     if (!name.trim()) return setError('Nama produk wajib diisi.');
     if (!slug.trim()) return setError('Slug url wajib diisi.');
     if (categoryId === 0) return setError('Pilihlah salah satu kategori.');
     if (price <= 0) return setError('Harga produk harus lebih dari 0.');
     if (stock < 0) return setError('Stok produk tidak boleh kurang dari 0.');
 
-    if (editingProduct) {
-      // Edit Update
-      setProducts(prev =>
-        prev.map(p =>
-          p.id === editingProduct.id
-            ? { ...p, name, slug, categoryId, description, price, stock, image: imageFile, isActive, barcode: p.barcode || editingProduct.barcode }
-            : p
-        )
-      );
-    } else {
-      // Create Insert
-      const generatedBarcode = generateBarcode();
-      const newProd: Product = {
-        id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 101,
-        categoryId,
-        name,
-        slug,
-        description,
-        price,
-        stock,
-        image: imageFile,
-        isActive,
-        createdAt: new Date().toISOString().substring(0, 10),
-        barcode: generatedBarcode, // Auto-generate barcode
-      };
-      console.log('New product with barcode:', newProd);
-      setProducts(prev => [newProd, ...prev]);
-    }
+    try {
+      if (editingProduct) {
+        // Edit Update
+        console.log('Updating product:', editingProduct.id);
+        setProducts(prev =>
+          prev.map(p =>
+            p.id === editingProduct.id
+              ? { ...p, name, slug, categoryId, description, price, stock, image: imageFile, isActive, barcode: p.barcode || editingProduct.barcode }
+              : p
+          )
+        );
+      } else {
+        // Create Insert
+        const generatedBarcode = generateBarcode();
+        console.log('Generated barcode for new product:', generatedBarcode);
+        
+        const newProd: Product = {
+          id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 101,
+          categoryId,
+          name,
+          slug,
+          description,
+          price,
+          stock,
+          image: imageFile,
+          isActive,
+          createdAt: new Date().toISOString().substring(0, 10),
+          barcode: generatedBarcode, // Auto-generate barcode
+        };
+        console.log('New product created:', newProd);
+        setProducts(prev => {
+          const updated = [newProd, ...prev];
+          console.log('Updated products array:', updated);
+          return updated;
+        });
+      }
 
-    setIsOpenModal(false);
+      console.log('Product save successful, closing modal');
+      setIsOpenModal(false);
+    } catch (err) {
+      console.error('Error saving product:', err);
+      setError('Terjadi kesalahan saat menyimpan produk: ' + (err as Error).message);
+    }
   };
 
   // Formatting currency
@@ -170,16 +237,78 @@ export default function AdminProducts({
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };
 
-  // Handle image file upload
+  // Handle image file upload with size limit and compression
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImageFile(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Check file type
+    if (!file.type.startsWith('image/')) {
+      alert('❌ File harus berupa gambar!\n\nFormat yang didukung: JPG, PNG, GIF, WebP');
+      e.target.value = '';
+      return;
     }
+
+    // Check file size (max 500KB untuk menghindari localStorage quota)
+    const maxSizeKB = 500;
+    const fileSizeKB = file.size / 1024;
+
+    if (fileSizeKB > maxSizeKB) {
+      alert(
+        `⚠️ GAMBAR TERLALU BESAR!\n\n` +
+        `Ukuran file: ${fileSizeKB.toFixed(0)} KB\n` +
+        `Maksimal: ${maxSizeKB} KB\n\n` +
+        `SOLUSI:\n` +
+        `1. Compress gambar di https://tinypng.com/\n` +
+        `2. Atau gunakan gambar dengan resolusi lebih kecil\n` +
+        `3. Atau gunakan URL gambar eksternal (upload ke imgur.com)`
+      );
+      e.target.value = '';
+      return;
+    }
+
+    // Read and compress image
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas for compression
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Calculate new dimensions (max 800x800)
+        let width = img.width;
+        let height = img.height;
+        const maxDimension = 800;
+        
+        if (width > maxDimension || height > maxDimension) {
+          if (width > height) {
+            height = (height / width) * maxDimension;
+            width = maxDimension;
+          } else {
+            width = (width / height) * maxDimension;
+            height = maxDimension;
+          }
+        }
+        
+        canvas.width = width;
+        canvas.height = height;
+        
+        // Draw compressed image
+        ctx?.drawImage(img, 0, 0, width, height);
+        
+        // Convert to base64 with quality 0.7
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+        
+        // Check compressed size
+        const compressedSizeKB = (compressedBase64.length * 0.75) / 1024;
+        console.log(`Original: ${fileSizeKB.toFixed(0)} KB → Compressed: ${compressedSizeKB.toFixed(0)} KB`);
+        
+        setImageFile(compressedBase64);
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
   };
 
   // Multi-level filtering logic
@@ -437,6 +566,17 @@ export default function AdminProducts({
               </div>
             )}
 
+            {storageWarning && (
+              <div className={`p-3 rounded-xl text-xs flex items-center gap-2 mb-4 ${
+                storageWarning.startsWith('⚠️') 
+                  ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400' 
+                  : 'bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400'
+              }`}>
+                <AlertCircle size={15} />
+                <span>{storageWarning}</span>
+              </div>
+            )}
+
             <form onSubmit={handleSubmit} className="space-y-4 text-xs font-semibold">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -501,6 +641,9 @@ export default function AdminProducts({
                         onChange={handleImageUpload}
                         className="w-full px-2 py-1.5 text-xs rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none cursor-pointer file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                       />
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Max 500KB. Auto-compress ke 800x800px. Format: JPG, PNG, GIF
+                      </p>
                     </div>
                   </div>
                 </div>

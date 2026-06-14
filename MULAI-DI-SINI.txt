@@ -1,0 +1,100 @@
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║  🎯 MULAI DI SINI - RESET & FIX MASALAH                          ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+📌 MASALAH YANG ANDA ALAMI:
+
+1. ❌ Beli tiket wisata → Form pengiriman masih muncul
+2. ❌ Nama produk yang tersimpan SALAH (Multivitamin, bukan Tiket)
+3. ✅ Stok berkurang (ini BENAR)
+
+📌 PENYEBAB:
+
+- Data LAMA yang corrupt masih tersimpan di localStorage
+- Nama kategori mungkin tidak mengandung keyword yang tepat
+
+═══════════════════════════════════════════════════════════════════
+
+✅ SOLUSI - 3 LANGKAH MUDAH (TANPA CONSOLE!)
+
+LANGKAH 1: RESET DATABASE
+
+   1. Double-click file: RESET-SATU-KLIK.html
+   2. Klik tombol "🔥 RESET SEKARANG"
+   3. Klik "OK" pada konfirmasi
+   4. Tunggu sampai muncul "🎉 RESET BERHASIL!"
+   5. Otomatis redirect ke /welcome
+
+LANGKAH 2: DAFTAR UMKM BARU
+
+   1. Di halaman welcome, klik "🚀 Daftar Baru"
+   2. Isi dengan data BARU:
+      - Email: [EMAIL BARU! Jangan pakai yang lama]
+      - Nama UMKM: Dinar Toko Kue Dan Kebun Stoberry
+      - [Isi field lainnya]
+   3. Klik "Daftarkan & Dapatkan KODE UMKM"
+   4. Catat Kode UMKM yang diberikan
+
+LANGKAH 3: BUAT KATEGORI YANG BENAR
+
+   ✅ UNTUK TIKET/WISATA (Tanpa Pengiriman):
+      Nama: "Tiket Wisata Kebun"
+      [HARUS ada kata "tiket" atau "wisata"]
+   
+   ✅ UNTUK MAKANAN (Ada Pengiriman):
+      Nama: "Makanan & Snack"
+      [HARUS ada kata "makanan" atau "minuman"]
+   
+   ✅ UNTUK PENGINAPAN (Tanpa Pengiriman):
+      Nama: "Penginapan & Hotel"
+      [HARUS ada kata "penginapan" atau "hotel"]
+
+   ❌ JANGAN:
+      "Tiket masuk kebun stoberry" ← Terlalu spesifik
+      "Stoberry Farm" ← Tidak ada keyword
+
+═══════════════════════════════════════════════════════════════════
+
+📖 DOKUMENTASI LENGKAP:
+
+1. CARA-MUDAH-RESET.md ⭐ ← Baca ini untuk panduan lengkap!
+2. VERIFIKASI-FITUR-KATEGORI.md ← Penjelasan fitur
+3. SOLUSI-MASALAH-EMAIL.md ← Fix masalah email
+4. CARA-RESET-DATABASE.md ← Alternatif reset lain
+
+═══════════════════════════════════════════════════════════════════
+
+⚠️ PENTING:
+
+✓ Setelah reset, WAJIB pakai EMAIL BARU untuk daftar UMKM
+✓ Nama kategori HARUS mengandung keyword:
+  - "makanan" atau "minuman" → Ada pengiriman
+  - "tiket" atau "wisata" → Tanpa pengiriman + booking
+  - "penginapan" atau "hotel" → Tanpa pengiriman + booking
+✓ Test tanpa image dulu (skip upload image)
+
+═══════════════════════════════════════════════════════════════════
+
+🎯 EXPECTED RESULT:
+
+Setelah ikuti 3 langkah di atas:
+
+✅ Beli produk tiket → Field alamat OPSIONAL (tidak wajib)
+✅ Beli produk tiket → Field booking date MUNCUL
+✅ Beli produk tiket → Warning "Tidak perlu pengiriman" MUNCUL
+✅ Setelah bayar → Tombol "Cetak Invoice" MUNCUL
+✅ Invoice PDF → Nama produk BENAR (Tiket, bukan Multivitamin)
+✅ Di admin → Data transaksi dengan nama produk BENAR
+✅ Stok produk BERKURANG
+
+═══════════════════════════════════════════════════════════════════
+
+🚀 MULAI SEKARANG:
+
+1. Double-click: RESET-SATU-KLIK.html
+2. Ikuti panduan di CARA-MUDAH-RESET.md
+3. Test checkout & kirim screenshot hasilnya!
+
+═══════════════════════════════════════════════════════════════════

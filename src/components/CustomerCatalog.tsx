@@ -123,25 +123,35 @@ export default function CustomerCatalog({
 
   // Helper: Check if cart contains booking-required categories
   const requiresBookingDate = () => {
-    return cart.some(item => {
+    const needsBooking = cart.some(item => {
       const category = categories.find(c => c.id === item.product.categoryId);
       if (!category) return false;
       const catNameLower = category.name.toLowerCase();
-      return catNameLower.includes('tiket') || 
-             catNameLower.includes('wisata') || 
-             catNameLower.includes('penginapan') ||
-             catNameLower.includes('hotel');
+      const hasKeyword = catNameLower.includes('tiket') || 
+                         catNameLower.includes('wisata') || 
+                         catNameLower.includes('penginapan') ||
+                         catNameLower.includes('hotel');
+      
+      console.log(`[Booking Check] Product: ${item.product.name}, Category: ${category.name}, Needs Booking: ${hasKeyword}`);
+      return hasKeyword;
     });
+    console.log(`[Booking Check] Cart requires booking date: ${needsBooking}`);
+    return needsBooking;
   };
 
   // Helper: Check if cart requires shipping
   const requiresShipping = () => {
-    return cart.some(item => {
+    const needsShipping = cart.some(item => {
       const category = categories.find(c => c.id === item.product.categoryId);
       if (!category) return false;
       const catNameLower = category.name.toLowerCase();
-      return catNameLower.includes('makanan') || catNameLower.includes('minuman');
+      const hasKeyword = catNameLower.includes('makanan') || catNameLower.includes('minuman');
+      
+      console.log(`[Shipping Check] Product: ${item.product.name}, Category: ${category.name}, Needs Shipping: ${hasKeyword}`);
+      return hasKeyword;
     });
+    console.log(`[Shipping Check] Cart requires shipping: ${needsShipping}`);
+    return needsShipping;
   };
 
   const handleCheckout = (e: React.FormEvent) => {
@@ -161,7 +171,7 @@ export default function CustomerCatalog({
     // Create items snapshot
     const itemsSnapshot = cart.map(item => {
       const category = categories.find(c => c.id === item.product.categoryId);
-      return {
+      const snapshot = {
         productId: item.product.id,
         productName: item.product.name,
         categoryName: category?.name || 'Uncategorized',
@@ -169,10 +179,13 @@ export default function CustomerCatalog({
         price: item.product.price,
         subtotal: item.product.price * item.quantity
       };
+      console.log(`[Snapshot] Creating for product:`, snapshot);
+      return snapshot;
     });
 
     console.log('=== CHECKOUT DEBUG ===');
     console.log('Cart items:', cart);
+    console.log('Categories available:', categories);
     console.log('Items snapshot:', itemsSnapshot);
     console.log('Needs shipping:', needsShipping);
     console.log('Booking date:', bookingDate);
