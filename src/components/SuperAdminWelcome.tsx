@@ -175,11 +175,11 @@ export default function SuperAdminWelcome({
   };
 
   return (
-    <div className="max-w-4xl mx-auto my-6 font-semibold text-xs font-sans">
-      {/* Logo Section - Pojok kanan atas */}
-      <div className="flex justify-end gap-4 mb-6">
-        <img src="/Logo_WEBBISTARA.png" alt="BISTARA Logo" className="h-16 object-contain" />
-        <img src="/logo_telkom.png" alt="Telkom Logo" className="h-16 object-contain" />
+    <div className="max-w-4xl mx-auto my-6 font-semibold text-xs font-sans relative">
+      {/* Logo Section - Fixed pojok kanan atas */}
+      <div className="fixed top-6 right-6 flex gap-4 z-50">
+        <img src="/Logo_WEBBISTARA.png" alt="BISTARA Logo" className="h-14 object-contain bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2" />
+        <img src="/logo_telkom.png" alt="Telkom Logo" className="h-14 object-contain bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2" />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
