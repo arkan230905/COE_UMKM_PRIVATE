@@ -52,8 +52,17 @@ export default function App() {
     localStorage.setItem('is_super_admin_logged_in', String(isSuperAdminLoggedIn));
   }, [isSuperAdminLoggedIn]);
 
-  // Preferences states
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  // Preferences states - Load dark mode from localStorage
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('dark_mode');
+    return saved === 'true';
+  });
+
+  // Save dark mode preference to localStorage when it changes
+  useEffect(() => {
+    localStorage.setItem('dark_mode', String(isDarkMode));
+  }, [isDarkMode]);
+
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [currentPreset, setCurrentPreset] = useState<UMKMPreset>(() => {
