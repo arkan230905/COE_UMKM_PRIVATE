@@ -36,7 +36,6 @@ export default function SuperAdminWelcome({
   // Register Form States
   const [adminName, setAdminName] = useState('');
   const [brandName, setBrandName] = useState('');
-  const [industry, setIndustry] = useState('Kesehatan & Apotek');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [regEmail, setRegEmail] = useState('');
@@ -111,15 +110,16 @@ export default function SuperAdminWelcome({
     const shortPrefix = brandName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z]/g, 'X');
     const generatedCode = `UMKM-${shortPrefix}-${randomSuffix}`;
 
-    // Set default brand color based on industry
+    // Set default values
     const defaultBrandColor = '#1E3A5F'; // Deep Navy as default for all
+    const defaultIndustry = 'Umum'; // Default industry
 
     const newPresetId = slug.toLowerCase() + '_' + Date.now();
     const newPreset: UMKMPreset = {
       id: newPresetId,
       umkmCode: generatedCode,
       businessName: brandName.trim(),
-      industry: industry,
+      industry: defaultIndustry,
       logoText: brandName.trim().substring(0, 3).toUpperCase(),
       primaryColor: defaultBrandColor,
       accentColor: defaultBrandColor + 'dd',
@@ -361,20 +361,6 @@ export default function SuperAdminWelcome({
                       className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg bg-transparent dark:text-white focus:outline-none"
                     />
                   </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-500 mb-1">Kategori Sektor Industri *</label>
-                  <select
-                    value={industry}
-                    onChange={(e) => setIndustry(e.target.value)}
-                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 dark:text-white cursor-pointer focus:outline-none"
-                  >
-                    <option value="Kesehatan & Apotek">🏥 Kesehatan & Apotek</option>
-                    <option value="Kafe & Kuliner">☕ Kafe & Kuliner</option>
-                    <option value="Boutique & Fashion">👗 Boutique & Fashion</option>
-                    <option value="Toko Ritel Kelontong">🛒 Toko Ritel Kelontong</option>
-                  </select>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
