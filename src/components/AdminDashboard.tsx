@@ -273,7 +273,7 @@ export default function AdminDashboard({
         <div>
           <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Welcome Back</span>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            {currentPreset.adminName || currentPreset.businessName} <span className="text-xl font-normal text-slate-400">| Super Admin</span>
+            {currentPreset.adminName || currentPreset.businessName} <span className="text-xl font-normal text-slate-400">| Admin</span>
           </h1>
         </div>
 
