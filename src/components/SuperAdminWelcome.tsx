@@ -37,21 +37,10 @@ export default function SuperAdminWelcome({
   const [adminName, setAdminName] = useState('');
   const [brandName, setBrandName] = useState('');
   const [industry, setIndustry] = useState('Kesehatan & Apotek');
-  const [brandColor, setBrandColor] = useState('#1E3A5F');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
-
-  const availableColors = [
-    { value: '#1E3A5F', name: 'Deep Navy' },
-    { value: '#0D9488', name: 'Teal' },
-    { value: '#10B981', name: 'Emerald' },
-    { value: '#8B5CF6', name: 'Violet' },
-    { value: '#F43F5E', name: 'Rose Red' },
-    { value: '#F59E0B', name: 'Amber Glow' },
-    { value: '#3B82F6', name: 'Royal Blue' },
-  ];
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -122,6 +111,9 @@ export default function SuperAdminWelcome({
     const shortPrefix = brandName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z]/g, 'X');
     const generatedCode = `UMKM-${shortPrefix}-${randomSuffix}`;
 
+    // Set default brand color based on industry
+    const defaultBrandColor = '#1E3A5F'; // Deep Navy as default for all
+
     const newPresetId = slug.toLowerCase() + '_' + Date.now();
     const newPreset: UMKMPreset = {
       id: newPresetId,
@@ -129,8 +121,8 @@ export default function SuperAdminWelcome({
       businessName: brandName.trim(),
       industry: industry,
       logoText: brandName.trim().substring(0, 3).toUpperCase(),
-      primaryColor: brandColor,
-      accentColor: brandColor + 'dd',
+      primaryColor: defaultBrandColor,
+      accentColor: defaultBrandColor + 'dd',
       currency: 'Rp',
       phone: phone || '0812-9988-1122',
       address: address || 'Alamat Utama UMKM Terdaftar',
@@ -194,11 +186,11 @@ export default function SuperAdminWelcome({
             </div>
             
             <div className="p-2 w-fit bg-white/10 rounded-lg text-amber-400 font-bold border border-white/5 uppercase tracking-widest text-[9px]">
-              Sistem Informasi
+              Platform Digital
             </div>
             <div>
-              <h2 className="text-2xl font-black tracking-tight leading-tight">SIUPIN</h2>
-              <span className="text-xs text-amber-300 font-bold block mt-1">Sistem Informasi UMKM Pintar</span>
+              <h2 className="text-2xl font-black tracking-tight leading-tight">BISTARA</h2>
+              <span className="text-xs text-amber-300 font-bold block mt-1">Solusi Digital untuk UMKM Indonesia</span>
               <p className="text-xs text-slate-300 mt-3 leading-relaxed">
                 Platform digital cerdas terpadu yang dirancang khusus untuk memodernisasi tata kelola operasional, transaksi Point-of-Sale (POS), dan kepatuhan administrasi UMKM Indonesia secara real-time.
               </p>
@@ -371,36 +363,18 @@ export default function SuperAdminWelcome({
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-500 mb-1">Kategori Sektor Industri *</label>
-                    <select
-                      value={industry}
-                      onChange={(e) => setIndustry(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 dark:text-white cursor-pointer focus:outline-none"
-                    >
-                      <option value="Kesehatan & Apotek">🏥 Kesehatan & Apotek</option>
-                      <option value="Kafe & Kuliner">☕ Kafe & Kuliner</option>
-                      <option value="Boutique & Fashion">👗 Boutique & Fashion</option>
-                      <option value="Toko Ritel Kelontong">🛒 Toko Ritel Kelontong</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-500 mb-1">Pilih Warna Khas Brand Usaha *</label>
-                    <div className="flex gap-2.5 items-center py-2.5 bg-slate-50 dark:bg-slate-850 px-2.5 rounded-lg border border-slate-150 dark:border-transparent">
-                      <div className="w-4 h-4 rounded-full border border-slate-200" style={{ backgroundColor: brandColor }} />
-                      <select
-                        value={brandColor}
-                        onChange={(e) => setBrandColor(e.target.value)}
-                        className="w-full bg-transparent text-xs text-slate-700 dark:text-white focus:outline-none cursor-pointer"
-                      >
-                        {availableColors.map(c => (
-                          <option key={c.value} value={c.value}>{c.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                <div>
+                  <label className="block text-slate-500 mb-1">Kategori Sektor Industri *</label>
+                  <select
+                    value={industry}
+                    onChange={(e) => setIndustry(e.target.value)}
+                    className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-800 rounded-lg bg-white dark:bg-slate-900 dark:text-white cursor-pointer focus:outline-none"
+                  >
+                    <option value="Kesehatan & Apotek">🏥 Kesehatan & Apotek</option>
+                    <option value="Kafe & Kuliner">☕ Kafe & Kuliner</option>
+                    <option value="Boutique & Fashion">👗 Boutique & Fashion</option>
+                    <option value="Toko Ritel Kelontong">🛒 Toko Ritel Kelontong</option>
+                  </select>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

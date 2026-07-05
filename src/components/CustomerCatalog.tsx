@@ -461,7 +461,7 @@ export default function CustomerCatalog({
       { align: 'center' }
     );
     doc.text(
-      'Invoice ini dicetak otomatis oleh SIUPIN (Sistem Informasi UMKM Pintar)',
+      'Invoice ini dicetak otomatis oleh BISTARA (Solusi Digital untuk UMKM Indonesia)',
       pageWidth / 2,
       doc.internal.pageSize.getHeight() - 10,
       { align: 'center' }

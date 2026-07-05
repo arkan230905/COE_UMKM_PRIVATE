@@ -481,7 +481,7 @@ export default function AdminFinancialReport({
         { align: 'center' }
       );
       doc.text(
-        `Dicetak oleh ${currentPreset.businessName} - SIUPIN (Sistem Informasi UMKM Pintar)`,
+        `Dicetak oleh ${currentPreset.businessName} - BISTARA (Solusi Digital untuk UMKM Indonesia)`,
         pageWidth / 2,
         pageHeight - 5,
         { align: 'center' }
