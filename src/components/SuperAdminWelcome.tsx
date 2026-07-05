@@ -176,10 +176,10 @@ export default function SuperAdminWelcome({
 
   return (
     <div 
-      className="min-h-screen w-full bg-cover bg-center bg-no-repeat bg-fixed"
+      className="min-h-screen w-full bg-cover bg-center bg-no-repeat bg-fixed flex items-center justify-center"
       style={{ backgroundImage: 'url(/latar_belakang_webbistara.png)' }}
     >
-      <div className="max-w-4xl mx-auto py-6 px-4 font-semibold text-xs font-sans relative">
+      <div className="max-w-4xl w-full py-6 px-4 font-semibold text-xs font-sans relative">
         {/* Logo Section - Fixed pojok kanan atas */}
         <div className="fixed top-6 right-6 flex gap-4 z-50">
           <img src="/Logo_WEBBISTARA.png" alt="BISTARA Logo" className="h-14 object-contain bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2" />
