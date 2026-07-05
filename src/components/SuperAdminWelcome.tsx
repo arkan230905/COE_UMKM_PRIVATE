@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Shield, Lock, CheckCircle, Info, Landmark, HelpCircle, User, Key, ArrowRight, Activity } from 'lucide-react';
+import { Shield, Lock, CheckCircle, Landmark, HelpCircle, User, Key, ArrowRight, Activity } from 'lucide-react';
 import { UMKMPreset, Category, Product } from '../types';
 
 interface SuperAdminWelcomeProps {
@@ -176,9 +176,15 @@ export default function SuperAdminWelcome({
 
   return (
     <div className="max-w-4xl mx-auto my-6 font-semibold text-xs font-sans">
+      {/* Logo Section - Pojok kanan atas */}
+      <div className="flex justify-end gap-4 mb-6">
+        <img src="/Logo_WEBBISTARA.png" alt="BISTARA Logo" className="h-16 object-contain" />
+        <img src="/logo_telkom.png" alt="Telkom Logo" className="h-16 object-contain" />
+      </div>
+
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         
-        {/* SIUPIN Branding Block */}
+        {/* BISTARA Branding Block */}
         <div className="md:col-span-5 space-y-4 text-slate-700 dark:text-slate-300">
           <div className="p-6 bg-linear-to-b from-[#1E3A5F] to-slate-900 border border-slate-800 text-white rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
             <div className="absolute right-4 top-4 opacity-10">
@@ -210,13 +216,6 @@ export default function SuperAdminWelcome({
                 <span>Katalog Interaktif Mandiri untuk memudahkan pelanggan memesan barang secara langsung.</span>
               </div>
             </div>
-          </div>
-
-          <div className="p-4 bg-amber-50 dark:bg-slate-900/50 rounded-xl border border-amber-500/10 text-amber-800 dark:text-amber-400 flex items-start gap-3">
-            <Info size={16} className="shrink-0 mt-0.5 text-amber-500" />
-            <p className="leading-normal text-[11px] font-medium">
-              Gunakan login simulasi dengan Kode UMKM: <code className="bg-slate-250 dark:bg-slate-800 px-1 rounded text-red-600 dark:text-red-400 font-bold">FARM-2026</code>, Email: <code className="bg-slate-250 dark:bg-slate-800 px-1 rounded text-red-600 dark:text-red-400 font-bold">admin@mail.com</code>, Sandi: <code className="bg-slate-250 dark:bg-slate-800 px-1 rounded text-red-600 dark:text-red-400 font-bold">admin</code>
-            </p>
           </div>
         </div>
 
