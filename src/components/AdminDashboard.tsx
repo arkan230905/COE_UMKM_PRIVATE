@@ -17,7 +17,9 @@ import {
   CheckCircle2,
   Clock,
   XCircle,
-  AlertCircle
+  AlertCircle,
+  Bell,
+  X
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -55,6 +57,68 @@ export default function AdminDashboard({
   const [selectedYearLine, setSelectedYearLine] = useState<'all' | '2024' | '2025'>('all');
   const [hoveredRow, setHoveredRow] = useState<number | null>(null);
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+
+  // Generate notifications based on recent transactions and expenses
+  const generateNotifications = () => {
+    const notifications: Array<{
+      id: string;
+      type: 'sale' | 'expense';
+      title: string;
+      message: string;
+      amount: number;
+      timestamp: string;
+      isNew: boolean;
+    }> = [];
+
+    // Get recent transactions (last 24 hours)
+    const now = new Date();
+    const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+
+    // Add sale notifications
+    const recentTransactions = transactions
+      .filter(tx => new Date(tx.createdAt) > oneDayAgo && (tx.status === 'paid' || tx.status === 'completed'))
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+
+    recentTransactions.forEach(tx => {
+      notifications.push({
+        id: `sale-${tx.id}`,
+        type: 'sale',
+        title: '💰 Penjualan Baru',
+        message: `Transaksi ${tx.transactionCode} berhasil. Metode: ${tx.paymentMethod}`,
+        amount: tx.totalAmount,
+        timestamp: tx.createdAt,
+        isNew: new Date(tx.createdAt).getTime() > now.getTime() - 3600000 // Last 1 hour = new
+      });
+    });
+
+    // Add expense notifications
+    const recentExpenses = expenses
+      .filter(exp => new Date(exp.createdAt) > oneDayAgo)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, 5);
+
+    recentExpenses.forEach(exp => {
+      notifications.push({
+        id: `expense-${exp.id}`,
+        type: 'expense',
+        title: '💸 Pengeluaran Kas',
+        message: `${exp.expenseCategory}: ${exp.description}`,
+        amount: exp.amount,
+        timestamp: exp.createdAt,
+        isNew: new Date(exp.createdAt).getTime() > now.getTime() - 3600000
+      });
+    });
+
+    // Sort by timestamp (newest first)
+    return notifications.sort((a, b) => 
+      new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+    );
+  };
+
+  const notifications = generateNotifications();
+  const hasNewNotifications = notifications.some(n => n.isNew);
 
   // Dynamic calculations to match mockup values or display actual interactive aggregates
   const formatCurrency = (amount: number) => {
@@ -224,10 +288,15 @@ export default function AdminDashboard({
               style={{ '--tw-ring-color': currentPreset.accentColor } as React.CSSProperties}
             />
           </div>
-          <div className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-slate-500 relative cursor-pointer hover:bg-slate-50">
-            <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full"></span>
-            <Calendar size={16} />
-          </div>
+          <button
+            onClick={() => setIsNotificationOpen(true)}
+            className="p-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700 text-slate-500 relative cursor-pointer hover:bg-slate-50 transition-colors"
+          >
+            {hasNewNotifications && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-rose-500 rounded-full animate-pulse"></span>
+            )}
+            <Bell size={16} />
+          </button>
         </div>
       </div>
 
@@ -603,6 +672,106 @@ export default function AdminDashboard({
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Tutup Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Notification Modal */}
+      {isNotificationOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 max-w-lg w-full shadow-2xl relative max-h-[80vh] flex flex-col">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-xl">
+                  <Bell size={20} />
+                </div>
+                <div>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">Notifikasi</h4>
+                  <p className="text-xs text-slate-400">
+                    {notifications.length} notifikasi (24 jam terakhir)
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsNotificationOpen(false)}
+                className="text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-md transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto flex-1 p-4">
+              {notifications.length > 0 ? (
+                <div className="space-y-3">
+                  {notifications.map((notif) => (
+                    <div
+                      key={notif.id}
+                      className={`p-4 rounded-xl border transition-all ${
+                        notif.isNew
+                          ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900/30'
+                          : 'bg-slate-50 dark:bg-slate-800/40 border-slate-100 dark:border-slate-800'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h5 className="font-bold text-sm text-slate-900 dark:text-white">
+                              {notif.title}
+                            </h5>
+                            {notif.isNew && (
+                              <span className="text-[9px] px-1.5 py-0.5 bg-rose-500 text-white rounded-full font-bold uppercase">
+                                Baru
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-slate-600 dark:text-slate-400 mb-2">
+                            {notif.message}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs text-slate-500 dark:text-slate-500">
+                              {new Date(notif.timestamp).toLocaleString('id-ID', {
+                                day: 'numeric',
+                                month: 'short',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                            <span className={`text-sm font-bold ${
+                              notif.type === 'sale' 
+                                ? 'text-emerald-600 dark:text-emerald-400' 
+                                : 'text-rose-600 dark:text-rose-400'
+                            }`}>
+                              {notif.type === 'sale' ? '+' : '-'}{formatCurrency(notif.amount)}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-full w-16 h-16 mx-auto mb-4 flex items-center justify-center">
+                    <Bell size={24} className="text-slate-400" />
+                  </div>
+                  <h5 className="font-bold text-slate-900 dark:text-white mb-2">
+                    Tidak Ada Notifikasi
+                  </h5>
+                  <p className="text-xs text-slate-400">
+                    Tidak ada penjualan atau pengeluaran dalam 24 jam terakhir
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-slate-100 dark:border-slate-800">
+              <button
+                onClick={() => setIsNotificationOpen(false)}
+                className="w-full px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Tutup
               </button>
             </div>
           </div>
