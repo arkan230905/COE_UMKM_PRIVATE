@@ -175,17 +175,21 @@ export default function SuperAdminWelcome({
   };
 
   return (
-    <div className="max-w-4xl mx-auto my-6 font-semibold text-xs font-sans relative">
-      {/* Logo Section - Fixed pojok kanan atas */}
-      <div className="fixed top-6 right-6 flex gap-4 z-50">
-        <img src="/Logo_WEBBISTARA.png" alt="BISTARA Logo" className="h-14 object-contain bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2" />
-        <img src="/logo_telkom.png" alt="Telkom Logo" className="h-14 object-contain bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2" />
-      </div>
+    <div 
+      className="min-h-screen w-full bg-cover bg-center bg-no-repeat bg-fixed"
+      style={{ backgroundImage: 'url(/latar_belakang_webbistara.png)' }}
+    >
+      <div className="max-w-4xl mx-auto py-6 px-4 font-semibold text-xs font-sans relative">
+        {/* Logo Section - Fixed pojok kanan atas */}
+        <div className="fixed top-6 right-6 flex gap-4 z-50">
+          <img src="/Logo_WEBBISTARA.png" alt="BISTARA Logo" className="h-14 object-contain bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2" />
+          <img src="/logo_telkom.png" alt="Telkom Logo" className="h-14 object-contain bg-white/90 backdrop-blur-sm rounded-lg shadow-lg p-2" />
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
         
-        {/* BISTARA Branding Block */}
-        <div className="md:col-span-5 space-y-4 text-slate-700 dark:text-slate-300">
+          {/* BISTARA Branding Block */}
+          <div className="md:col-span-5 space-y-4 text-slate-700 dark:text-slate-300">
           <div className="p-6 bg-linear-to-b from-[#1E3A5F] to-slate-900 border border-slate-800 text-white rounded-2xl shadow-xl space-y-4 relative overflow-hidden">
             <div className="absolute right-4 top-4 opacity-10">
               <Shield size={100} />
@@ -426,6 +430,7 @@ export default function SuperAdminWelcome({
           </div>
         </div>
 
+      </div>
       </div>
     </div>
   );
