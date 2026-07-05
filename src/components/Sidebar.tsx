@@ -105,19 +105,18 @@ export default function Sidebar({
       }`}
     >
       {/* Sidebar Header with Brand Logo */}
-      <div className="p-5 flex items-center justify-between border-b border-bento-navy/10 dark:border-slate-800">
+      <div className="p-5 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
         <div className="flex items-center gap-3 overflow-hidden">
-          <div
-            className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-md transition-colors duration-300 bg-bento-navy"
-          >
-            {getPresetIcon()}
+          {/* Logo BISTARA */}
+          <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 overflow-hidden">
+            <img src="/Logo_WEBBISTARA.png" alt="BISTARA" className="w-full h-full object-contain" />
           </div>
           {!isCollapsed && (
             <div className="flex flex-col animate-fade-in">
-              <span className="font-bold text-lg text-bento-navy dark:text-white tracking-tight leading-tight">
+              <span className="font-bold text-lg text-slate-900 dark:text-white tracking-tight leading-tight">
                 {currentPreset.businessName}
               </span>
-              <span className="text-xs text-bento-text-muted dark:text-slate-500 font-medium tracking-wide prose uppercase">
+              <span className="text-xs text-slate-500 dark:text-slate-500 font-medium tracking-wide prose uppercase">
                 {currentPreset.industry}
               </span>
             </div>
@@ -159,11 +158,11 @@ export default function Sidebar({
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer ${
                           isActive
-                            ? 'bg-bento-navy text-white shadow-md'
-                            : 'text-bento-text-muted dark:text-slate-400 hover:text-bento-navy dark:hover:text-white hover:bg-bento-light-blue/50 dark:hover:bg-slate-800/40'
+                            ? 'bg-[#1E3A5F] text-white shadow-md'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40'
                         } ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`}
                       >
-                        <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-bento-navy dark:group-hover:text-white'} />
+                        <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-white'} />
                         {!isCollapsed && <span>{item.name}</span>}
                       </button>
                     );
@@ -192,11 +191,11 @@ export default function Sidebar({
                         onClick={() => setActiveTab(item.id)}
                         className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer ${
                           isActive
-                            ? 'bg-bento-navy text-white shadow-md'
-                            : 'text-bento-text-muted dark:text-slate-400 hover:text-bento-navy dark:hover:text-white hover:bg-bento-light-blue/50 dark:hover:bg-slate-800/40'
+                            ? 'bg-[#1E3A5F] text-white shadow-md'
+                            : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40'
                         } ${disabled ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`}
                       >
-                        <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-bento-navy dark:group-hover:text-white'} />
+                        <Icon size={18} className={isActive ? 'text-white' : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-white'} />
                         {!isCollapsed && <span>{item.name}</span>}
                       </button>
                     );
@@ -222,8 +221,8 @@ export default function Sidebar({
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer ${
                     activeTab === 'catalog'
-                      ? 'bg-bento-navy text-white shadow-md'
-                      : 'text-bento-text-muted dark:text-slate-400 hover:text-bento-navy dark:hover:text-white hover:bg-bento-light-blue/50 dark:hover:bg-slate-800/40'
+                      ? 'bg-[#1E3A5F] text-white shadow-md'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40'
                   }`}
                 >
                   <ShoppingBag size={18} />
@@ -236,7 +235,7 @@ export default function Sidebar({
                     setActiveTab('catalog');
                     if (setIsOpenCart) setIsOpenCart(true);
                   }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer text-bento-text-muted dark:text-slate-400 hover:text-bento-navy dark:hover:text-white hover:bg-bento-light-blue/50 dark:hover:bg-slate-800/40`}
+                  className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40`}
                 >
                   <div className="flex items-center gap-3">
                     <ShoppingCart size={18} />
@@ -257,8 +256,8 @@ export default function Sidebar({
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer ${
                     activeTab === 'order-history'
-                      ? 'bg-bento-navy text-white shadow-md'
-                      : 'text-bento-text-muted dark:text-slate-400 hover:text-bento-navy dark:hover:text-white hover:bg-bento-light-blue/50 dark:hover:bg-slate-800/40'
+                      ? 'bg-[#1E3A5F] text-white shadow-md'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40'
                   }`}
                 >
                   <ListOrdered size={18} />
@@ -279,7 +278,7 @@ export default function Sidebar({
                   href={`https://wa.me/${currentPreset.phone.replace(/\D/g, '')}?text=Halo%20Admin%2520${encodeURIComponent(currentPreset.businessName)},%20saya%20mengalami%20kendala%20mengenai%20pesanan%20saya.%20Mohon%20bantuannya%20untuk%20pelacakan%20atau%20pengurusan%20kendala%20ini.`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all text-bento-text-muted dark:text-slate-400 block cursor-pointer group"
+                  className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all text-slate-600 dark:text-slate-400 block cursor-pointer group"
                 >
                   <MessageSquare size={18} className="text-slate-400 group-hover:text-emerald-500" />
                   {!isCollapsed && <span>Hubungi Admin WA</span>}

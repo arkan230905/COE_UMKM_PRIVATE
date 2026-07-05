@@ -454,6 +454,7 @@ export default function App() {
             transactions={transactions}
             setTransactions={setTransactions}
             customers={allCustomers}
+            products={products}
             currentPreset={currentPreset}
           />
         );
@@ -668,39 +669,13 @@ export default function App() {
                   <Settings size={20} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white text-base">Multi-Tenant Presets & Settings</h4>
-                  <p className="text-xs text-slate-400">Konfigurasi profile UMKM - Aplikasi adaptif bagi bidang usaha apapun</p>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">Pengaturan Profil UMKM</h4>
+                  <p className="text-xs text-slate-400">Konfigurasi profil UMKM - Aplikasi adaptif bagi bidang usaha apapun</p>
                 </div>
               </div>
 
-              {/* Settings Tab Selectors */}
-              <div className="flex border-b border-slate-100 dark:border-slate-800 mb-4 text-xs font-extrabold gap-4">
-                <button
-                  type="button"
-                  onClick={() => setSettingsTab('profile')}
-                  className={`pb-2 transition cursor-pointer ${settingsTab === 'profile' ? 'border-b-2 text-indigo-600 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  Profil UMKM
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSettingsTab('register')}
-                  className={`pb-2 transition flex items-center gap-1.5 cursor-pointer ${settingsTab === 'register' ? 'border-b-2 text-indigo-600 border-indigo-600' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  🚀 Daftarkan UMKM Baru (Multi-Tenant)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSettingsTab('data')}
-                  className={`pb-2 transition flex items-center gap-1.5 cursor-pointer ${settingsTab === 'data' ? 'border-b-2 text-rose-600 border-rose-600' : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  🗑️ Hapus Data
-                </button>
-              </div>
-
-              {settingsTab === 'profile' ? (
-                /* Profile Edit View */
-                <div className="space-y-4 text-xs font-semibold">
+              {/* Profile Edit View - NO TABS, JUST PROFILE */}
+              <div className="space-y-4 text-xs font-semibold">
                   {/* Current UMKM Info */}
                   <div className="p-4 bg-indigo-50 dark:bg-indigo-950/20 rounded-xl border border-indigo-100 dark:border-indigo-900/50">
                     <div className="flex items-center gap-3">
@@ -802,167 +777,6 @@ export default function App() {
                     </div>
                   </div>
                 </div>
-              ) : (
-                /* Dynamic UMKM Registration Form (Multi-Tenant Option) */
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    if (!regUMKMName.trim()) return alert('Nama UMKM wajib diisi!');
-                    
-                    const newId = 'preset_user_' + Date.now();
-                    const genCode = `UMKM-${regUMKMName.substring(0, 4).toUpperCase().replace(/[^A-Z]/g, 'X')}-${Math.floor(1000 + Math.random() * 9000)}`;
-                    const newPreset: UMKMPreset = {
-                      id: newId,
-                      umkmCode: genCode,
-                      businessName: regUMKMName,
-                      industry: regUMKMIndustry,
-                      logoText: regUMKMName.substring(0, 3).toUpperCase(),
-                      primaryColor: regUMKMColor,
-                      accentColor: regUMKMColor,
-                      currency: 'Rp',
-                      phone: regUMKMPhone || '0812-3456-7890',
-                      address: regUMKMAddress || 'Alamat Kantor UMKM Baru'
-                    };
-
-                    setAllPresets(prev => [...prev, newPreset]);
-                    setCurrentPreset(newPreset);
-                    
-                    // Reset inputs
-                    setRegUMKMName('');
-                    setRegUMKMPhone('');
-                    setRegUMKMAddress('');
-                    
-                    setIsOpenSettings(false);
-                    setRole('super_admin');
-                    setActiveTab('dashboard');
-                    
-                    alert(`🚀 Berhasil mendaftarkan tenant UMKM "${newPreset.businessName}"! URL Multi-Tenant Anda otomatis terkonfigurasi secara dinamis.`);
-                  }}
-                  className="space-y-4 text-xs font-semibold"
-                >
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-slate-500 mb-1 font-bold">Nama UMKM Kebanggaan Anda *</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Contoh: UMKM ARKAN MEDICAL"
-                        value={regUMKMName}
-                        onChange={(e) => setRegUMKMName(e.target.value)}
-                        className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 dark:bg-slate-90 inner-input text-slate-800 dark:text-white"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-500 mb-1 font-bold">Kategori / Sektor Industri *</label>
-                        <select
-                          value={regUMKMIndustry}
-                          onChange={(e) => setRegUMKMIndustry(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 dark:bg-slate-90 font-medium inner-input bg-white dark:bg-slate-900 text-slate-800 dark:text-white"
-                        >
-                          <option value="Kesehatan & Alat Medis">Kesehatan & Alat Medis</option>
-                          <option value="Makanan & Minuman / Cafe">Makanan & Minuman / Cafe</option>
-                          <option value="Fashion & Boutique">Fashion & Boutique</option>
-                          <option value="Pariwisata & Jasa">Pariwisata & Jasa</option>
-                          <option value="Manufaktur Kerajinan">Manufaktur Kerajinan</option>
-                          <option value="Toko Kelontong & Ritel">Toko Kelontong & Ritel</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-slate-500 mb-[3px] font-bold">Branding Warna Utama</label>
-                        <div className="flex items-center gap-2">
-                          <input
-                            type="color"
-                            value={regUMKMColor}
-                            onChange={(e) => setRegUMKMColor(e.target.value)}
-                            className="w-8 h-8 rounded-lg cursor-pointer border border-slate-200 dark:border-slate-800 bg-transparent shrink-0"
-                          />
-                          <input
-                            type="text"
-                            value={regUMKMColor}
-                            onChange={(e) => setRegUMKMColor(e.target.value)}
-                            className="w-full px-2 py-1.5 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] focus:outline-none inner-input"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-slate-500 mb-1 font-bold">Nomor Kontak / HP *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="Contoh: 081234567890"
-                          value={regUMKMPhone}
-                          onChange={(e) => setRegUMKMPhone(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 dark:bg-slate-90 inner-input"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-slate-500 mb-1 font-bold">Alamat Kantor UMKM *</label>
-                        <input
-                          type="text"
-                          required
-                          placeholder="Alamat Kantor Pusat Tenant..."
-                          value={regUMKMAddress}
-                          onChange={(e) => setRegUMKMAddress(e.target.value)}
-                          className="w-full px-3 py-2 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none focus:ring-1 dark:bg-slate-90 inner-input"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                    <button
-                      type="submit"
-                      className="w-full py-3 text-white font-bold rounded-xl shadow-lg hover:scale-[1.01] transition focus:outline-none cursor-pointer"
-                      style={{ backgroundColor: regUMKMColor }}
-                    >
-                      Daftarkan & Aktifkan Multi-Tenant Baru 🚀
-                    </button>
-                  </div>
-                </form>
-              )}
-
-              {settingsTab === 'data' && (
-                /* Data Management View */
-                <div className="space-y-4 text-xs font-semibold">
-                  <div className="p-4 bg-rose-50 dark:bg-rose-950/20 rounded-xl border border-rose-200 dark:border-rose-900/50">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-rose-100 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-lg shrink-0">
-                        <AlertCircle size={18} />
-                      </div>
-                      <div>
-                        <h5 className="font-black text-rose-900 dark:text-rose-300 text-sm mb-1">Hapus Semua Data UMKM</h5>
-                        <p className="text-rose-700 dark:text-rose-400 leading-relaxed">
-                          Tindakan ini akan menghapus SEMUA data untuk UMKM <strong>{currentPreset.businessName}</strong> termasuk:
-                        </p>
-                        <ul className="mt-2 space-y-1 text-rose-700 dark:text-rose-400 list-disc list-inside">
-                          <li>Semua Kategori Produk</li>
-                          <li>Semua Produk & Inventaris</li>
-                          <li>Semua Transaksi Penjualan</li>
-                          <li>Semua Pengeluaran Bisnis</li>
-                          <li>Semua Catatan Pendapatan</li>
-                        </ul>
-                        <p className="mt-2 text-rose-800 dark:text-rose-300 font-bold">
-                          ⚠️ Tindakan ini TIDAK DAPAT dibatalkan!
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end">
-                    <button
-                      onClick={clearCurrentPresetData}
-                      className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white font-bold rounded-xl shadow-md cursor-pointer flex items-center gap-2"
-                    >
-                      <Trash size={14} /> Hapus Semua Data
-                    </button>
-                  </div>
-                </div>
-              )}
 
               <div className="mt-6 flex justify-end gap-3 text-xs">
                 <button
@@ -971,14 +785,12 @@ export default function App() {
                 >
                   Kembali
                 </button>
-                {settingsTab === 'profile' && (
-                  <button
-                    onClick={() => setIsOpenSettings(false)}
-                    className="px-4 py-2.5 text-white bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl shadow-md cursor-pointer text-center"
-                  >
-                    Simpan Perubahan
-                  </button>
-                )}
+                <button
+                  onClick={() => setIsOpenSettings(false)}
+                  className="px-4 py-2.5 text-white bg-indigo-600 hover:bg-indigo-700 font-bold rounded-xl shadow-md cursor-pointer text-center"
+                >
+                  Simpan Perubahan
+                </button>
               </div>
             </div>
           </div>

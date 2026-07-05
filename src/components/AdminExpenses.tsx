@@ -31,6 +31,9 @@ export default function AdminExpenses({
   const [quantity, setQuantity] = useState<number>(0);
   const [unit, setUnit] = useState('pcs');
   const [pricePerUnit, setPricePerUnit] = useState<number>(0);
+  const [shippingCost, setShippingCost] = useState<number>(0); // Biaya Kirim
+  const [discount, setDiscount] = useState<number>(0); // Diskon dalam rupiah
+  const [ppnPercent, setPpnPercent] = useState<number>(0); // PPN dalam persen (misal: 11 untuk 11%)
 
   const categories = ['Pembelian Stok', 'Gaji Karyawan', 'Tagihan Listrik & Air', 'Sewa & Keamanan', 'Lain-lain'];
 
@@ -53,7 +56,7 @@ export default function AdminExpenses({
     setQuantity(num);
     // Auto calculate total if price per unit is set
     if (pricePerUnit > 0) {
-      setAmount(num * pricePerUnit);
+      calculateTotal(num, pricePerUnit, shippingCost, discount, ppnPercent);
     }
   };
 
@@ -63,7 +66,39 @@ export default function AdminExpenses({
     setPricePerUnit(num);
     // Auto calculate total if quantity is set
     if (quantity > 0) {
-      setAmount(quantity * num);
+      calculateTotal(quantity, num, shippingCost, discount, ppnPercent);
+    }
+  };
+
+  const handleShippingCostChange = (valueStr: string) => {
+    const digits = valueStr.replace(/\D/g, '');
+    const num = digits ? parseInt(digits, 10) : 0;
+    setShippingCost(num);
+    calculateTotal(quantity, pricePerUnit, num, discount, ppnPercent);
+  };
+
+  const handleDiscountChange = (valueStr: string) => {
+    const digits = valueStr.replace(/\D/g, '');
+    const num = digits ? parseInt(digits, 10) : 0;
+    setDiscount(num);
+    calculateTotal(quantity, pricePerUnit, shippingCost, num, ppnPercent);
+  };
+
+  const handlePpnPercentChange = (valueStr: string) => {
+    // Allow decimal for PPN (misal: 11 atau 11.5)
+    const num = valueStr ? parseFloat(valueStr) : 0;
+    setPpnPercent(num);
+    calculateTotal(quantity, pricePerUnit, shippingCost, discount, num);
+  };
+
+  const calculateTotal = (qty: number, price: number, shipping: number, disc: number, ppnPct: number) => {
+    if (qty > 0 && price > 0) {
+      const subtotal = qty * price; // Subtotal bahan baku
+      const afterShipping = subtotal + shipping; // Tambah biaya kirim
+      const afterDiscount = afterShipping - disc; // Kurangi diskon
+      const ppnAmount = afterDiscount * (ppnPct / 100); // Hitung PPN dari total bersih
+      const grandTotal = afterDiscount + ppnAmount; // Grand total
+      setAmount(grandTotal > 0 ? grandTotal : 0);
     }
   };
 
@@ -78,6 +113,9 @@ export default function AdminExpenses({
     setQuantity(0);
     setUnit('pcs');
     setPricePerUnit(0);
+    setShippingCost(0);
+    setDiscount(0);
+    setPpnPercent(0);
     setError('');
     setIsOpenModal(true);
   };
@@ -93,6 +131,9 @@ export default function AdminExpenses({
     setQuantity(exp.quantity || 0);
     setUnit(exp.unit || 'pcs');
     setPricePerUnit(exp.pricePerUnit || 0);
+    setShippingCost(exp.shippingCost || 0);
+    setDiscount(exp.discount || 0);
+    setPpnPercent(exp.ppnPercent || 0);
     setError('');
     setIsOpenModal(true);
   };
@@ -133,7 +174,10 @@ export default function AdminExpenses({
                   materialName,
                   quantity,
                   unit,
-                  pricePerUnit
+                  pricePerUnit,
+                  shippingCost,
+                  discount,
+                  ppnPercent
                 })
               }
             : e
@@ -153,7 +197,10 @@ export default function AdminExpenses({
           materialName,
           quantity,
           unit,
-          pricePerUnit
+          pricePerUnit,
+          shippingCost,
+          discount,
+          ppnPercent
         })
       };
       setExpenses(prev => [newExp, ...prev]);
@@ -183,12 +230,12 @@ export default function AdminExpenses({
       {/* Header and sums */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Super Admin</span>
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Admin</span>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <Receipt className="text-slate-450" size={24} style={{ color: currentPreset.accentColor }} />
-            Expenses Management
+            Pengeluaran Kas
           </h1>
-          <p className="text-xs text-slate-400">Track and log business expenditures and stock purchase bills</p>
+          <p className="text-xs text-slate-400">Lacak dan catat pengeluaran operasional bisnis dan pembelian stok</p>
         </div>
 
         <button
@@ -202,10 +249,10 @@ export default function AdminExpenses({
 
       {/* Aggregate Spend bar */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="md:col-span-1 p-5 bg-gradient-to-br from-rose-500 to-rose-600 dark:from-rose-600 dark:to-rose-750 text-white rounded-2xl shadow-sm space-y-1">
-          <span className="text-[10px] text-indigo-100 font-bold uppercase tracking-wider block">Total Pengeluaran Saring</span>
+        <div className="md:col-span-1 p-5 bg-gradient-to-br from-[#1E3A5F] to-[#152942] dark:from-[#1E3A5F] dark:to-[#0f1f2e] text-white rounded-2xl shadow-sm space-y-1">
+          <span className="text-[10px] text-blue-100 font-bold uppercase tracking-wider block">Total Pengeluaran Saring</span>
           <span className="text-2xl font-black block tracking-tight">{formatCurrency(aggregateExpenses)}</span>
-          <span className="text-[11px] font-semibold text-rose-100 block">Dari {filteredExpenses.length} transaksi pengeluaran</span>
+          <span className="text-[11px] font-semibold text-blue-100 block">Dari {filteredExpenses.length} transaksi pengeluaran</span>
         </div>
 
         {/* Filter bar */}
@@ -262,6 +309,9 @@ export default function AdminExpenses({
                     <th scope="col" className="px-6 py-4 text-center">Quantity</th>
                     <th scope="col" className="px-6 py-4">Satuan</th>
                     <th scope="col" className="px-6 py-4 text-right">Harga/Satuan</th>
+                    <th scope="col" className="px-6 py-4 text-right">Biaya Kirim</th>
+                    <th scope="col" className="px-6 py-4 text-right">Diskon</th>
+                    <th scope="col" className="px-6 py-4 text-center">PPN (%)</th>
                     <th scope="col" className="px-6 py-4 text-right font-bold">Total</th>
                     <th scope="col" className="px-6 py-4">Tanggal</th>
                     <th scope="col" className="px-6 py-4">Deskripsi</th>
@@ -290,6 +340,18 @@ export default function AdminExpenses({
 
                       <td className="px-6 py-4 text-right font-semibold text-slate-700 dark:text-slate-300">
                         {exp.pricePerUnit ? formatCurrency(exp.pricePerUnit) : '-'}
+                      </td>
+
+                      <td className="px-6 py-4 text-right font-semibold text-cyan-600 dark:text-cyan-400">
+                        {exp.shippingCost ? formatCurrency(exp.shippingCost) : '-'}
+                      </td>
+
+                      <td className="px-6 py-4 text-right font-semibold text-orange-600 dark:text-orange-400">
+                        {exp.discount ? formatCurrency(exp.discount) : '-'}
+                      </td>
+
+                      <td className="px-6 py-4 text-center font-semibold text-blue-600 dark:text-blue-400">
+                        {exp.ppnPercent ? `${exp.ppnPercent}%` : '-'}
                       </td>
 
                       <td className="px-6 py-4 text-right font-black text-emerald-600 dark:text-emerald-400">
@@ -545,15 +607,91 @@ export default function AdminExpenses({
                     </div>
                   </div>
 
+                  {/* Biaya Kirim Field */}
+                  <div>
+                    <label className="block text-slate-500 dark:text-slate-400 mb-1">Biaya Kirim</label>
+                    <input
+                      type="text"
+                      value={shippingCost === 0 ? '' : shippingCost.toLocaleString('id-ID')}
+                      onChange={(e) => handleShippingCostChange(e.target.value)}
+                      placeholder="0"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none font-bold"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">Ongkos kirim dari supplier (dalam Rupiah)</p>
+                  </div>
+
+                  {/* Diskon and PPN Fields */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">Diskon (Rp)</label>
+                      <input
+                        type="text"
+                        value={discount === 0 ? '' : discount.toLocaleString('id-ID')}
+                        onChange={(e) => handleDiscountChange(e.target.value)}
+                        placeholder="0"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none font-bold"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">Potongan harga dalam Rupiah</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-500 dark:text-slate-400 mb-1">PPN (%)</label>
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="100"
+                        value={ppnPercent === 0 ? '' : ppnPercent}
+                        onChange={(e) => handlePpnPercentChange(e.target.value)}
+                        placeholder="11"
+                        className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-850 dark:text-white focus:outline-none font-bold"
+                      />
+                      <p className="text-[10px] text-slate-400 mt-1">Pajak Pertambahan Nilai (misal: 11 untuk 11%)</p>
+                    </div>
+                  </div>
+
                   <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl border-2 border-emerald-200 dark:border-emerald-800">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Subtotal Bahan:</span>
+                      <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                        {formatCurrency(quantity * pricePerUnit)}
+                      </span>
+                    </div>
+                    {shippingCost > 0 && (
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-emerald-600 dark:text-emerald-400">+ Biaya Kirim:</span>
+                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(shippingCost)}
+                        </span>
+                      </div>
+                    )}
+                    {discount > 0 && (
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="text-[10px] text-orange-600 dark:text-orange-400">- Diskon:</span>
+                        <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400">
+                          {formatCurrency(discount)}
+                        </span>
+                      </div>
+                    )}
+                    {ppnPercent > 0 && (
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] text-blue-600 dark:text-blue-400">+ PPN ({ppnPercent}%):</span>
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                          {formatCurrency((quantity * pricePerUnit + shippingCost - discount) * (ppnPercent / 100))}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between pt-2 border-t border-emerald-200 dark:border-emerald-700">
                       <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300">Total Pembelian:</span>
                       <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
                         {formatCurrency(amount)}
                       </span>
                     </div>
                     <p className="text-[10px] text-emerald-600 dark:text-emerald-400 mt-1">
-                      {quantity} {unit} × {formatCurrency(pricePerUnit)} = {formatCurrency(amount)}
+                      {quantity} {unit} × {formatCurrency(pricePerUnit)}
+                      {shippingCost > 0 ? ` + Kirim ${formatCurrency(shippingCost)}` : ''}
+                      {discount > 0 ? ` - Diskon ${formatCurrency(discount)}` : ''}
+                      {ppnPercent > 0 ? ` + PPN ${ppnPercent}%` : ''}
                     </p>
                   </div>
 

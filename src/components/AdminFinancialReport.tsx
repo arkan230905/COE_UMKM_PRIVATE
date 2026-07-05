@@ -110,7 +110,7 @@ export default function AdminFinancialReport({
         transactionId: t.id as number | null,
         amount: t.totalAmount,
         date: t.createdAt.substring(0, 10),
-        description: `Penjualan Online Kode #${t.transactionCode}`
+        description: `Penjualan ${t.isOffline ? 'Offline/Toko' : 'Online'}`
       }))
   ].sort((a,b) => b.date.localeCompare(a.date));
 
@@ -237,13 +237,19 @@ export default function AdminFinancialReport({
     yPosition += 12;
 
     // Income Table
-    const incomeTableData = combinedIncomesList.map((item, index) => [
-      (index + 1).toString(),
-      item.date,
-      item.description,
-      formatCurrency(item.amount),
-      item.transactionId ? 'Penjualan Online' : 'Manual'
-    ]);
+    const incomeTableData = combinedIncomesList.map((item, index) => {
+      // Check if it's a transaction by looking at the description pattern
+      const isTransaction = item.transactionId !== null;
+      const isOffline = isTransaction && item.description.includes('Offline/Toko');
+      
+      return [
+        (index + 1).toString(),
+        item.date,
+        item.description,
+        formatCurrency(item.amount),
+        isTransaction ? (isOffline ? 'Penjualan Offline' : 'Penjualan Online') : 'Manual'
+      ];
+    });
 
     (doc as any).autoTable({
       startY: yPosition,
@@ -498,12 +504,12 @@ export default function AdminFinancialReport({
       {/* Header and buttons */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Super Admin</span>
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Admin</span>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <BarChart3 className="text-slate-450" size={24} style={{ color: currentPreset.accentColor }} />
-            Financial Report & Profitability
+            Laporan Keuangan & Profitabilitas
           </h1>
-          <p className="text-xs text-slate-400">Deep check on business earnings, expenditures, and net pocket profitability ratios</p>
+          <p className="text-xs text-slate-400">Analisis mendalam pendapatan bisnis, pengeluaran, dan rasio profitabilitas bersih</p>
         </div>
 
         <div className="flex gap-2">
@@ -526,7 +532,7 @@ export default function AdminFinancialReport({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-medium">
         {/* Total Income */}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-2 relative overflow-hidden group">
-          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-bold uppercase tracking-wider block">Total Pendapatan (Incomes)</span>
+          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-bold uppercase tracking-wider block">Total Pendapatan</span>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-extrabold text-[#1E3A5F] dark:text-white leading-tight">
               {formatCurrency(totalIncome)}
@@ -543,7 +549,7 @@ export default function AdminFinancialReport({
 
         {/* Total Expense */}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-2 relative overflow-hidden group">
-          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-bold uppercase tracking-wider block">Total Pengeluaran (Expenses)</span>
+          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-bold uppercase tracking-wider block">Total Pengeluaran</span>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 leading-tight">
               {formatCurrency(totalExpense)}
@@ -560,7 +566,7 @@ export default function AdminFinancialReport({
 
         {/* Net Profit card */}
         <div className="bg-gradient-to-br from-bento-navy to-slate-900 text-white rounded-xl p-5 shadow-sm space-y-2 relative overflow-hidden group">
-          <span className="text-[11px] text-bento-light-blue font-bold uppercase tracking-wider block">Est. Laba Bersih (Net Pocket Profit)</span>
+          <span className="text-[11px] text-bento-light-blue font-bold uppercase tracking-wider block">Laba Bersih</span>
           <div className="flex items-center gap-2">
             <span className="text-2xl font-extrabold leading-tight text-white">
               {formatCurrency(netProfit)}
@@ -578,8 +584,8 @@ export default function AdminFinancialReport({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 font-medium">
         <div className="lg:col-span-2 p-6 bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-base">Cashflow Comparison (Pemasukan vs Pengeluaran)</h3>
-            <p className="text-xs text-slate-400">Monthly aggregate cash inflow vs operational outflow analysis</p>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base">Perbandingan Arus Kas (Pemasukan vs Pengeluaran)</h3>
+            <p className="text-xs text-slate-400">Analisis agregat bulanan pemasukan kas vs pengeluaran operasional</p>
           </div>
 
           <div className="h-64 my-4">
@@ -589,8 +595,8 @@ export default function AdminFinancialReport({
                 <XAxis dataKey="name" fontSize={11} stroke="#94a3b8" tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} stroke="#94a3b8" tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} />
                 <Tooltip formatter={(value) => formatCurrency(Number(value))} />
-                <Bar dataKey="Pemasukan" fill="#1E3A5F" radius={[4, 4, 0, 0]} name="Inflow / Pemasukan" />
-                <Bar dataKey="Pengeluaran" fill="#E0F2FE" stroke="#1E3A5F" strokeWidth={1} radius={[4, 4, 0, 0]} name="Outflow / Pengeluaran" />
+                <Bar dataKey="Pemasukan" fill="#1E3A5F" radius={[4, 4, 0, 0]} name="Pemasukan" />
+                <Bar dataKey="Pengeluaran" fill="#E0F2FE" stroke="#1E3A5F" strokeWidth={1} radius={[4, 4, 0, 0]} name="Pengeluaran" />
                 <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
               </BarChart>
             </ResponsiveContainer>
@@ -600,8 +606,8 @@ export default function AdminFinancialReport({
         {/* Incomes records list ledger right panel */}
         <div className="lg:col-span-1 p-5 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between space-y-4">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Income Records (Pemasukan)</h3>
-            <p className="text-xs text-slate-400">Ledger of all credit transactions and custom logged entries</p>
+            <h3 className="font-bold text-slate-900 dark:text-white text-sm">Catatan Pemasukan</h3>
+            <p className="text-xs text-slate-400">Buku besar semua transaksi kredit dan entri kustom yang dicatat</p>
           </div>
 
           <div className="relative">
@@ -621,13 +627,13 @@ export default function AdminFinancialReport({
               filteredIncomeList.map((item, idx) => (
                 <div
                   key={idx}
-                  className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between"
+                  className="p-3 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-100 dark:border-slate-800 flex items-start justify-between gap-2"
                 >
-                  <div className="space-y-0.5">
-                    <span className="block font-bold text-slate-90s dark:text-white text-xs truncate max-w-[140px]">{item.description}</span>
+                  <div className="space-y-0.5 flex-1 min-w-0">
+                    <span className="block font-bold text-slate-900 dark:text-white text-xs break-words leading-tight">{item.description}</span>
                     <span className="block text-[9px] text-slate-400 font-semibold">{item.date}</span>
                   </div>
-                  <span className="font-black text-emerald-600 text-xs text-right">
+                  <span className="font-black text-emerald-600 text-xs text-right whitespace-nowrap shrink-0">
                     +{formatCurrency(item.amount)}
                   </span>
                 </div>

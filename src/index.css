@@ -1,15 +1,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
-
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @layer base {
   body {
-    @apply bg-bento-bg text-bento-text-dark font-sans transition-colors duration-300;
+    background-color: #F8FAFC;
+    color: #1E293B;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    transition: background-color 300ms, color 300ms;
   }
   
   html.dark body {
-    @apply bg-slate-950 text-slate-50;
+    background-color: #020617;
+    color: #F8FAFC;
   }
 }
+
+/* Custom color definitions for BISTARA theme */
+:root {
+  --bento-navy: #1E3A5F;
+  --bento-light-blue: #E0F2FE;
+  --bento-text-muted: #64748B;
+  --bento-bg: #F8FAFC;
+}
+
+html.dark {
+  --bento-navy: #1E3A5F;
+  --bento-light-blue: #0F172A;
+  --bento-text-muted: #94A3B8;
+  --bento-bg: #020617;
+}
+

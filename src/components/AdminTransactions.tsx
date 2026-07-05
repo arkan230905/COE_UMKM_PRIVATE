@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { ListOrdered, Search, Edit3, Eye, FileText, CheckCircle2, Clock, XCircle, User, MessageSquare, ShieldAlert, ArrowRight } from 'lucide-react';
-import { Transaction, Customer, UMKMPreset, TransactionStatus } from '../types';
+import { ListOrdered, Search, Edit3, Eye, FileText, CheckCircle2, Clock, XCircle, User, MessageSquare, ShieldAlert, ArrowRight, Plus, ShoppingCart, Barcode, Trash2, X, CheckCircle } from 'lucide-react';
+import { Transaction, Customer, UMKMPreset, TransactionStatus, Product } from '../types';
 
 interface AdminTransactionsProps {
   transactions: Transaction[];
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   customers: Customer[];
+  products: Product[];
   currentPreset: UMKMPreset;
 }
 
@@ -13,11 +14,24 @@ export default function AdminTransactions({
   transactions,
   setTransactions,
   customers,
+  products,
   currentPreset
 }: AdminTransactionsProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | TransactionStatus>('all');
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
+  const [viewMode, setViewMode] = useState<'online' | 'offline'>('online');
+  
+  // Kasir Offline states
+  const [showKasirModal, setShowKasirModal] = useState(false);
+  const [barcodeInput, setBarcodeInput] = useState('');
+  const [productSearchInput, setProductSearchInput] = useState('');
+  const [cartItems, setCartItems] = useState<Array<{
+    product: Product;
+    quantity: number;
+  }>>([]);
+  const [kasirPaymentMethod, setKasirPaymentMethod] = useState<'Cash' | 'E-Wallet' | 'Debit Card' | 'QRIS'>('Cash');
+  const [kasirNotes, setKasirNotes] = useState('');
 
   // Shipping details management states
   const [courierName, setCourierName] = useState('J&T Express');
@@ -31,6 +45,131 @@ export default function AdminTransactions({
       setShippingStatus(selectedTx.shippingStatus || 'Dalam Antrean');
     }
   }, [selectedTx]);
+
+  // Kasir Functions
+  const handleBarcodeSearch = (barcode: string) => {
+    const product = products.find(p => p.barcode === barcode && p.isActive);
+    if (product) {
+      addToCart(product);
+      setBarcodeInput('');
+      setProductSearchInput('');
+    }
+  };
+
+  const handleProductNameSearch = (searchName: string) => {
+    const product = products.find(p => 
+      p.name.toLowerCase().includes(searchName.toLowerCase()) && p.isActive
+    );
+    if (product) {
+      addToCart(product);
+      setBarcodeInput('');
+      setProductSearchInput('');
+    }
+  };
+
+  const addToCart = (product: Product) => {
+    if (product.stock <= 0) {
+      alert('Stok produk habis!');
+      return;
+    }
+
+    setCartItems(prev => {
+      const existingItem = prev.find(item => item.product.id === product.id);
+      if (existingItem) {
+        if (existingItem.quantity >= product.stock) {
+          alert(`Stok tidak cukup! Stok tersedia: ${product.stock}`);
+          return prev;
+        }
+        return prev.map(item =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      } else {
+        return [...prev, { product, quantity: 1 }];
+      }
+    });
+  };
+
+  const updateCartQuantity = (productId: number, newQuantity: number) => {
+    const item = cartItems.find(item => item.product.id === productId);
+    if (!item) return;
+
+    if (newQuantity > item.product.stock) {
+      alert(`Stok tidak cukup! Stok tersedia: ${item.product.stock}`);
+      return;
+    }
+
+    if (newQuantity <= 0) {
+      removeFromCart(productId);
+    } else {
+      setCartItems(prev =>
+        prev.map(item =>
+          item.product.id === productId
+            ? { ...item, quantity: newQuantity }
+            : item
+        )
+      );
+    }
+  };
+
+  const removeFromCart = (productId: number) => {
+    setCartItems(prev => prev.filter(item => item.product.id !== productId));
+  };
+
+  const calculateTotal = () => {
+    return cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
+  };
+
+  const handleProcessOfflineTransaction = () => {
+    if (cartItems.length === 0) {
+      alert('Keranjang kosong! Tambahkan produk terlebih dahulu.');
+      return;
+    }
+
+    // Generate transaction code
+    const txCode = `TRX${Date.now().toString().slice(-8)}`;
+    
+    const newTransaction: Transaction = {
+      id: transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 1,
+      customerId: 0, // Pelanggan toko/walk-in
+      transactionCode: txCode,
+      totalAmount: calculateTotal(),
+      status: 'completed', // Offline transaction langsung selesai
+      paymentMethod: kasirPaymentMethod,
+      notes: kasirNotes || 'Transaksi Offline - Kasir Toko',
+      createdAt: new Date().toISOString(),
+      isOffline: true,
+      items: cartItems.map(item => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        categoryName: '', // Could be populated from category lookup
+        quantity: item.quantity,
+        price: item.product.price,
+        subtotal: item.product.price * item.quantity
+      }))
+    };
+
+    // Update transactions
+    setTransactions(prev => [newTransaction, ...prev]);
+
+    // Clear kasir
+    setCartItems([]);
+    setKasirNotes('');
+    setBarcodeInput('');
+    setProductSearchInput('');
+    setShowKasirModal(false);
+
+    alert(`Transaksi berhasil! Kode: ${txCode}`);
+  };
+
+  const resetKasir = () => {
+    setCartItems([]);
+    setKasirNotes('');
+    setBarcodeInput('');
+    setProductSearchInput('');
+    setKasirPaymentMethod('Cash');
+  };
 
   const handleUpdateShipping = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,25 +238,82 @@ export default function AdminTransactions({
   // Filter lists based on keys strings and selections
   const filteredTransactions = transactions.filter(t => {
     const customer = customers.find(c => c.id === t.customerId);
-    const customerName = customer ? customer.name.toLowerCase() : 'pembeli umum';
+    const customerName = customer ? customer.name.toLowerCase() : 'pelanggan toko';
     const txCode = t.transactionCode.toLowerCase();
 
     const matchesSearch = customerName.includes(searchTerm.toLowerCase()) || txCode.includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || t.status === statusFilter;
+    const matchesViewMode = viewMode === 'online' ? !t.isOffline : t.isOffline;
 
-    return matchesSearch && matchesStatus;
+    return matchesSearch && matchesStatus && matchesViewMode;
   });
+
+  // Statistics
+  const onlineTransactions = transactions.filter(t => !t.isOffline);
+  const offlineTransactions = transactions.filter(t => t.isOffline);
+  const onlineTotal = onlineTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
+  const offlineTotal = offlineTransactions.reduce((sum, t) => sum + t.totalAmount, 0);
 
   return (
     <div className="space-y-6">
       {/* Header sections */}
-      <div>
-        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Super Admin</span>
-        <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
-          <ListOrdered className="text-slate-450" size={24} style={{ color: currentPreset.accentColor }} />
-          Transactions Log
-        </h1>
-        <p className="text-xs text-slate-400">View real-time purchase details, dispatch statuses, and change payment records</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Admin</span>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <ListOrdered className="text-slate-450" size={24} style={{ color: currentPreset.accentColor }} />
+            Transaksi Penjualan
+          </h1>
+          <p className="text-xs text-slate-400">Halaman untuk melihat dan mengelola data penjualan produk kepada pelanggan</p>
+        </div>
+
+        {viewMode === 'offline' && (
+          <button
+            onClick={() => setShowKasirModal(true)}
+            className="flex items-center gap-2 px-4 py-2.5 text-xs text-white uppercase tracking-wider font-bold rounded-xl shadow-md transition-transform hover:scale-105 duration-150 cursor-pointer"
+            style={{ backgroundColor: currentPreset.primaryColor }}
+          >
+            <Plus size={16} /> Transaksi Kasir
+          </button>
+        )}
+      </div>
+
+      {/* View Mode Toggle */}
+      <div className="flex items-center gap-3 bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-100 dark:border-slate-800 w-fit">
+        <button
+          onClick={() => setViewMode('online')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            viewMode === 'online'
+              ? 'bg-blue-500 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          🌐 Penjualan Online ({onlineTransactions.length})
+        </button>
+        <button
+          onClick={() => setViewMode('offline')}
+          className={`px-4 py-2 text-xs font-bold rounded-lg transition-all ${
+            viewMode === 'offline'
+              ? 'bg-emerald-500 text-white shadow-sm'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
+          }`}
+        >
+          🏪 Penjualan Offline/Toko ({offlineTransactions.length})
+        </button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="p-5 bg-gradient-to-br from-blue-500 to-blue-600 text-white rounded-2xl shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider opacity-90">Total Penjualan Online</span>
+          <div className="text-2xl font-black mt-1">{formatCurrency(onlineTotal)}</div>
+          <span className="text-xs opacity-90">{onlineTransactions.length} transaksi</span>
+        </div>
+        <div className="p-5 bg-gradient-to-br from-emerald-500 to-emerald-600 text-white rounded-2xl shadow-sm">
+          <span className="text-xs font-bold uppercase tracking-wider opacity-90">Total Penjualan Offline</span>
+          <div className="text-2xl font-black mt-1">{formatCurrency(offlineTotal)}</div>
+          <span className="text-xs opacity-90">{offlineTransactions.length} transaksi</span>
+        </div>
       </div>
 
       {/* Control bar */}
@@ -303,80 +499,95 @@ export default function AdminTransactions({
                 </div>
               </div>
 
-              {/* Shipping & Delivery Tracker read-only display */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 relative">
-                <span className="block font-bold text-[10px] uppercase text-indigo-600 dark:text-blue-400">
-                  Status Pengiriman Barang (Penerimaan Pelanggan)
-                </span>
-                
-                {/* Visual Tracker Line & Steps */}
-                <div className="flex items-center justify-between relative pt-2">
-                  <div className="absolute left-[8%] right-[8%] top-[18px] h-1 bg-slate-200 dark:bg-slate-700 z-0" />
-                  <div 
-                    className="absolute left-[8%] top-[18px] h-1 bg-emerald-500 z-0 transition-all duration-500"
-                    style={{
-                      width: 
-                        selectedTx.shippingStatus === 'Sampai Tujuan' ? '84%' :
-                        selectedTx.shippingStatus === 'Sedang Dikirim' ? '56%' :
-                        selectedTx.shippingStatus === 'Sedang Dikemas' ? '28%' : '0%'
-                    }}
-                  />
+              {/* Shipping & Delivery Tracker - ONLY FOR ONLINE TRANSACTIONS */}
+              {!selectedTx.isOffline && (
+                <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 relative">
+                  <span className="block font-bold text-[10px] uppercase text-indigo-600 dark:text-blue-400">
+                    Status Pengiriman Barang (Penerimaan Pelanggan)
+                  </span>
+                  
+                  {/* Visual Tracker Line & Steps */}
+                  <div className="flex items-center justify-between relative pt-2">
+                    <div className="absolute left-[8%] right-[8%] top-[18px] h-1 bg-slate-200 dark:bg-slate-700 z-0" />
+                    <div 
+                      className="absolute left-[8%] top-[18px] h-1 bg-emerald-500 z-0 transition-all duration-500"
+                      style={{
+                        width: 
+                          selectedTx.shippingStatus === 'Sampai Tujuan' ? '84%' :
+                          selectedTx.shippingStatus === 'Sedang Dikirim' ? '56%' :
+                          selectedTx.shippingStatus === 'Sedang Dikemas' ? '28%' : '0%'
+                      }}
+                    />
 
-                  {/* Step 1: Dipesan */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                    <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black bg-emerald-500 text-white shadow-xs">1</div>
-                    <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dipesan</span>
+                    {/* Step 1: Dipesan */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black bg-emerald-500 text-white shadow-xs">1</div>
+                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dipesan</span>
+                    </div>
+
+                    {/* Step 2: Dikemas */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
+                      <div 
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
+                          selectedTx.shippingStatus === 'Sedang Dikemas' || selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >2</div>
+                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dikemas</span>
+                    </div>
+
+                    {/* Step 3: Dikirim */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
+                      <div 
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
+                          selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >3</div>
+                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dikirim</span>
+                    </div>
+
+                    {/* Step 4: Tiba */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
+                      <div 
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
+                          selectedTx.shippingStatus === 'Sampai Tujuan'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >4</div>
+                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Tiba</span>
+                    </div>
                   </div>
 
-                  {/* Step 2: Dikemas */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                    <div 
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
-                        selectedTx.shippingStatus === 'Sedang Dikemas' || selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      }`}
-                    >2</div>
-                    <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dikemas</span>
-                  </div>
-
-                  {/* Step 3: Dikirim */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                    <div 
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
-                        selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      }`}
-                    >3</div>
-                    <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dikirim</span>
-                  </div>
-
-                  {/* Step 4: Tiba */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                    <div 
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
-                        selectedTx.shippingStatus === 'Sampai Tujuan'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      }`}
-                    >4</div>
-                    <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Tiba</span>
+                  <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-lg text-slate-650 dark:text-slate-350 select-none">
+                    <div className="flex justify-between font-bold text-[11px]">
+                      <span>Status Lokasi / Kondisi:</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 uppercase font-black">
+                        {selectedTx.shippingStatus || 'Dalam Antrean'}
+                      </span>
+                    </div>
+                    <div className="text-[10px] text-slate-400 font-normal italic pt-1.5 text-center leading-normal">
+                      💡 Status ini hanya dapat diubah menjadi "Sampai Tujuan" oleh konfirmasi langsung pelanggan via portal pelanggan mereka.
+                    </div>
                   </div>
                 </div>
+              )}
 
-                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-lg text-slate-650 dark:text-slate-350 select-none">
-                  <div className="flex justify-between font-bold text-[11px]">
-                    <span>Status Lokasi / Kondisi:</span>
-                    <span className="text-emerald-600 dark:text-emerald-400 uppercase font-black">
-                      {selectedTx.shippingStatus || 'Dalam Antrean'}
-                    </span>
-                  </div>
-                  <div className="text-[10px] text-slate-400 font-normal italic pt-1.5 text-center leading-normal">
-                    💡 Status ini hanya dapat diubah menjadi "Sampai Tujuan" oleh konfirmasi langsung pelanggan via portal pelanggan mereka.
+              {/* OFFLINE TRANSACTION INFO */}
+              {selectedTx.isOffline && (
+                <div className="p-4 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                  <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400">
+                    <CheckCircle size={18} />
+                    <div>
+                      <span className="block font-bold text-sm">Transaksi Offline - Kasir Toko</span>
+                      <span className="block text-xs">Pembayaran langsung di toko, tidak memerlukan pengiriman</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Items Table container listing */}
               <div>
@@ -387,12 +598,22 @@ export default function AdminTransactions({
                     <span className="flex-1 text-center">Qty / Harga</span>
                     <span className="flex-1 text-right">Subtotal</span>
                   </div>
-                  {/* Mock item list */}
-                  <div className="flex items-center justify-between p-3 text-slate-700 dark:text-slate-300">
-                    <span className="flex-[2] text-left text-slate-950 dark:text-white">Multivitamin Complex & Supplements Paket</span>
-                    <span className="flex-1 text-center font-mono text-[11px]">1 x {formatCurrency(selectedTx.totalAmount)}</span>
-                    <span className="flex-1 text-right font-bold text-slate-950 dark:text-white">{formatCurrency(selectedTx.totalAmount)}</span>
-                  </div>
+                  {/* Display actual items from transaction */}
+                  {selectedTx.items && selectedTx.items.length > 0 ? (
+                    selectedTx.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 text-slate-700 dark:text-slate-300">
+                        <span className="flex-[2] text-left text-slate-950 dark:text-white">{item.productName}</span>
+                        <span className="flex-1 text-center font-mono text-[11px]">{item.quantity} x {formatCurrency(item.price)}</span>
+                        <span className="flex-1 text-right font-bold text-slate-950 dark:text-white">{formatCurrency(item.subtotal)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-between p-3 text-slate-700 dark:text-slate-300">
+                      <span className="flex-[2] text-left text-slate-950 dark:text-white">Item Detail Tidak Tersedia</span>
+                      <span className="flex-1 text-center font-mono text-[11px]">1 x {formatCurrency(selectedTx.totalAmount)}</span>
+                      <span className="flex-1 text-right font-bold text-slate-950 dark:text-white">{formatCurrency(selectedTx.totalAmount)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -421,6 +642,233 @@ export default function AdminTransactions({
               >
                 Tutup Rincian
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* KASIR OFFLINE MODAL */}
+      {showKasirModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 max-w-4xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button
+              onClick={() => {
+                setShowKasirModal(false);
+                resetKasir();
+              }}
+              className="absolute top-4 right-4 text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 rounded-md z-10"
+            >
+              <X size={20} />
+            </button>
+
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2.5 bg-emerald-50 dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                <ShoppingCart size={24} />
+              </div>
+              <div>
+                <h4 className="font-bold text-slate-900 dark:text-white text-xl">Sistem Kasir - Penjualan Offline</h4>
+                <p className="text-xs text-slate-400">Scan barcode atau cari nama produk untuk menambahkan ke keranjang</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* LEFT PANEL - Product Search */}
+              <div className="lg:col-span-2 space-y-4">
+                {/* Barcode Scanner */}
+                <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                  <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                    <Barcode size={18} className="text-blue-600" />
+                    Scan Barcode Produk
+                  </label>
+                  <input
+                    type="text"
+                    value={barcodeInput}
+                    onChange={(e) => setBarcodeInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && barcodeInput.trim()) {
+                        handleBarcodeSearch(barcodeInput.trim());
+                      }
+                    }}
+                    placeholder="Scan atau ketik barcode produk..."
+                    className="w-full px-4 py-3 rounded-lg border border-blue-200 dark:border-blue-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm font-mono"
+                    autoFocus
+                  />
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">Tekan Enter setelah scan barcode</p>
+                </div>
+
+                {/* Product Name Search */}
+                <div className="p-4 bg-gradient-to-r from-emerald-50 to-green-50 dark:from-emerald-950/20 dark:to-green-950/20 rounded-xl border border-emerald-100 dark:border-emerald-900/30">
+                  <label className="block text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                    <Search size={18} className="text-emerald-600" />
+                    Cari Nama Produk
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={productSearchInput}
+                      onChange={(e) => setProductSearchInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && productSearchInput.trim()) {
+                          handleProductNameSearch(productSearchInput.trim());
+                        }
+                      }}
+                      placeholder="Ketik nama produk..."
+                      className="flex-1 px-4 py-3 rounded-lg border border-emerald-200 dark:border-emerald-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    />
+                    <button
+                      onClick={() => {
+                        if (productSearchInput.trim()) {
+                          handleProductNameSearch(productSearchInput.trim());
+                        }
+                      }}
+                      className="px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-sm transition-colors"
+                    >
+                      Cari
+                    </button>
+                  </div>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2">Cari produk berdasarkan nama, otomatis ditambahkan ke keranjang</p>
+                </div>
+
+                {/* Quick Product List */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-3">Produk Tersedia (Klik untuk tambah)</h5>
+                  <div className="grid grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                    {products.filter(p => p.isActive && p.stock > 0).slice(0, 20).map((product) => (
+                      <button
+                        key={product.id}
+                        onClick={() => addToCart(product)}
+                        className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 hover:border-emerald-500 dark:hover:border-emerald-500 transition-colors text-left"
+                      >
+                        <div className="text-xs font-bold text-slate-900 dark:text-white truncate">{product.name}</div>
+                        <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-1">{formatCurrency(product.price)}</div>
+                        <div className="text-[10px] text-slate-400 mt-1">Stok: {product.stock}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* RIGHT PANEL - Cart */}
+              <div className="space-y-4">
+                <div className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <h5 className="text-sm font-bold text-slate-900 dark:text-white mb-3 flex items-center justify-between">
+                    <span>Keranjang Belanja</span>
+                    <span className="text-xs text-slate-400">({cartItems.length} item)</span>
+                  </h5>
+
+                  {cartItems.length === 0 ? (
+                    <div className="text-center py-8 text-slate-400">
+                      <ShoppingCart size={40} className="mx-auto mb-2 opacity-50" />
+                      <p className="text-xs">Keranjang masih kosong</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-96 overflow-y-auto">
+                      {cartItems.map((item) => (
+                        <div key={item.product.id} className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700">
+                          <div className="flex items-start justify-between mb-2">
+                            <div className="flex-1">
+                              <div className="text-xs font-bold text-slate-900 dark:text-white">{item.product.name}</div>
+                              <div className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold mt-1">
+                                {formatCurrency(item.product.price)} / pcs
+                              </div>
+                            </div>
+                            <button
+                              onClick={() => removeFromCart(item.product.id)}
+                              className="p-1 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                                className="w-7 h-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded flex items-center justify-center font-bold text-sm"
+                              >
+                                -
+                              </button>
+                              <input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => updateCartQuantity(item.product.id, parseInt(e.target.value) || 0)}
+                                className="w-12 text-center py-1 rounded border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold"
+                                min="1"
+                                max={item.product.stock}
+                              />
+                              <button
+                                onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                                className="w-7 h-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded flex items-center justify-center font-bold text-sm"
+                              >
+                                +
+                              </button>
+                            </div>
+                            <div className="text-sm font-black text-slate-900 dark:text-white">
+                              {formatCurrency(item.product.price * item.quantity)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Cart Total */}
+                  {cartItems.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-base font-bold text-slate-900 dark:text-white">TOTAL</span>
+                        <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(calculateTotal())}
+                        </span>
+                      </div>
+
+                      {/* Payment Method */}
+                      <div className="mb-4">
+                        <label className="block text-xs font-bold text-slate-900 dark:text-white mb-2">Metode Pembayaran</label>
+                        <select
+                          value={kasirPaymentMethod}
+                          onChange={(e) => setKasirPaymentMethod(e.target.value as any)}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white text-sm font-semibold"
+                        >
+                          <option value="Cash">Cash (Tunai)</option>
+                          <option value="E-Wallet">E-Wallet</option>
+                          <option value="Debit Card">Debit Card</option>
+                          <option value="QRIS">QRIS</option>
+                        </select>
+                      </div>
+
+                      {/* Notes */}
+                      <div className="mb-4">
+                        <label className="block text-xs font-bold text-slate-900 dark:text-white mb-2">Catatan (Opsional)</label>
+                        <textarea
+                          value={kasirNotes}
+                          onChange={(e) => setKasirNotes(e.target.value)}
+                          placeholder="Tambahkan catatan transaksi..."
+                          rows={2}
+                          className="w-full px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-800 dark:text-white text-xs"
+                        />
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="space-y-2">
+                        <button
+                          onClick={handleProcessOfflineTransaction}
+                          className="w-full px-4 py-3 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg font-bold text-sm transition-colors flex items-center justify-center gap-2"
+                        >
+                          <CheckCircle size={18} />
+                          Proses Transaksi
+                        </button>
+                        <button
+                          onClick={resetKasir}
+                          className="w-full px-4 py-3 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-bold text-sm transition-colors"
+                        >
+                          Reset Keranjang
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>

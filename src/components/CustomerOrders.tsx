@@ -483,11 +483,21 @@ export default function CustomerOrders({
                     <span className="flex-1 text-center">Qty / Harga</span>
                     <span className="flex-1 text-right">Subtotal</span>
                   </div>
-                  <div className="flex items-center justify-between p-3 text-slate-700 dark:text-slate-350 font-medium">
-                    <span className="flex-[2] text-left text-slate-950 dark:text-white font-bold">Pembelian Paket Belanja Unit UMKM</span>
-                    <span className="flex-1 text-center font-mono">1 x {formatCurrency(selectedTx.totalAmount)}</span>
-                    <span className="flex-1 text-right font-black text-slate-950 dark:text-white">{formatCurrency(selectedTx.totalAmount)}</span>
-                  </div>
+                  {selectedTx.items && selectedTx.items.length > 0 ? (
+                    selectedTx.items.map((item, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 text-slate-700 dark:text-slate-350 font-medium">
+                        <span className="flex-[2] text-left text-slate-950 dark:text-white font-bold">{item.productName}</span>
+                        <span className="flex-1 text-center font-mono">{item.quantity} x {formatCurrency(item.price)}</span>
+                        <span className="flex-1 text-right font-black text-slate-950 dark:text-white">{formatCurrency(item.subtotal)}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex items-center justify-between p-3 text-slate-700 dark:text-slate-350 font-medium">
+                      <span className="flex-[2] text-left text-slate-950 dark:text-white font-bold">Pembelian Paket Belanja Unit UMKM</span>
+                      <span className="flex-1 text-center font-mono">1 x {formatCurrency(selectedTx.totalAmount)}</span>
+                      <span className="flex-1 text-right font-black text-slate-950 dark:text-white">{formatCurrency(selectedTx.totalAmount)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

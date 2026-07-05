@@ -60,7 +60,6 @@ export default function AdminProducts({
 
   // Form states
   const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
   const [categoryId, setCategoryId] = useState<number>(0);
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number>(0);
@@ -70,30 +69,35 @@ export default function AdminProducts({
   const [error, setError] = useState('');
   const [storageWarning, setStorageWarning] = useState('');
 
-  // Check localStorage usage on modal open
+  // Check localStorage usage on modal open - ONLY for current UMKM
   React.useEffect(() => {
-    if (isOpenModal) {
+    if (isOpenModal && currentPreset.id !== 'placeholder') {
       try {
-        // Calculate current storage usage
-        let totalSize = 0;
-        for (let key in localStorage) {
-          if (localStorage.hasOwnProperty(key)) {
-            totalSize += localStorage[key].length + key.length;
-          }
+        // Calculate ONLY current UMKM's product storage usage
+        const currentUMKMKey = `umkm_${currentPreset.id}_products`;
+        const currentUMKMData = localStorage.getItem(currentUMKMKey);
+        
+        if (!currentUMKMData) {
+          setStorageWarning('');
+          return;
         }
         
-        const usedMB = totalSize / 1024 / 1024;
-        const limitMB = 5; // Most browsers have ~5-10MB limit
+        const usedBytes = currentUMKMData.length + currentUMKMKey.length;
+        const usedKB = usedBytes / 1024;
+        const usedMB = usedKB / 1024;
+        
+        // Warning hanya jika data produk UMKM ini > 2MB
+        const limitMB = 3; // Limit per UMKM
         const percentUsed = (usedMB / limitMB) * 100;
         
         if (percentUsed > 80) {
           setStorageWarning(
-            `⚠️ Penyimpanan hampir penuh (${percentUsed.toFixed(0)}%)! ` +
-            `Sebaiknya hapus beberapa produk lama atau jangan upload gambar terlalu besar.`
+            `⚠️ Penyimpanan produk UMKM ini sudah ${usedMB.toFixed(1)}MB (${percentUsed.toFixed(0)}%)! ` +
+            `Sebaiknya hapus beberapa produk lama atau gunakan gambar lebih kecil.`
           );
         } else if (percentUsed > 60) {
           setStorageWarning(
-            `ℹ️ Penyimpanan terpakai ${percentUsed.toFixed(0)}%. ` +
+            `ℹ️ Penyimpanan produk: ${usedMB.toFixed(1)}MB (${percentUsed.toFixed(0)}%). ` +
             `Gunakan gambar kecil (<200KB) untuk produk baru.`
           );
         } else {
@@ -101,9 +105,10 @@ export default function AdminProducts({
         }
       } catch (e) {
         console.error('Error checking storage:', e);
+        setStorageWarning('');
       }
     }
-  }, [isOpenModal]);
+  }, [isOpenModal, currentPreset.id]);
 
   // Generate unique barcode
   const generateBarcode = (): string => {
@@ -117,14 +122,6 @@ export default function AdminProducts({
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setName(val);
-    if (!editingProduct) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '')
-      );
-    }
   };
 
   const handlePriceChange = (valueStr: string) => {
@@ -136,7 +133,6 @@ export default function AdminProducts({
   const handleOpenAdd = () => {
     setEditingProduct(null);
     setName('');
-    setSlug('');
     setCategoryId(categories[0]?.id || 0);
     setDescription('');
     setPrice(0);
@@ -150,7 +146,6 @@ export default function AdminProducts({
   const handleOpenEdit = (prod: Product) => {
     setEditingProduct(prod);
     setName(prod.name);
-    setSlug(prod.slug);
     setCategoryId(prod.categoryId);
     setDescription(prod.description);
     setPrice(prod.price);
@@ -173,16 +168,20 @@ export default function AdminProducts({
 
     console.log('=== PRODUCT FORM SUBMIT DEBUG ===');
     console.log('Name:', name);
-    console.log('Slug:', slug);
     console.log('Category ID:', categoryId);
     console.log('Price:', price);
     console.log('Stock:', stock);
 
     if (!name.trim()) return setError('Nama produk wajib diisi.');
-    if (!slug.trim()) return setError('Slug url wajib diisi.');
     if (categoryId === 0) return setError('Pilihlah salah satu kategori.');
     if (price <= 0) return setError('Harga produk harus lebih dari 0.');
     if (stock < 0) return setError('Stok produk tidak boleh kurang dari 0.');
+
+    // Auto-generate slug from name (untuk keperluan internal)
+    const generatedSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
 
     try {
       if (editingProduct) {
@@ -191,7 +190,7 @@ export default function AdminProducts({
         setProducts(prev =>
           prev.map(p =>
             p.id === editingProduct.id
-              ? { ...p, name, slug, categoryId, description, price, stock, image: imageFile, isActive, barcode: p.barcode || editingProduct.barcode }
+              ? { ...p, name, slug: generatedSlug, categoryId, description, price, stock, image: imageFile, isActive, barcode: p.barcode || editingProduct.barcode }
               : p
           )
         );
@@ -204,7 +203,7 @@ export default function AdminProducts({
           id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 101,
           categoryId,
           name,
-          slug,
+          slug: generatedSlug,
           description,
           price,
           stock,
@@ -337,12 +336,12 @@ export default function AdminProducts({
       {/* Header action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Super Admin</span>
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Admin</span>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <ShoppingBag className="text-slate-450" size={24} style={{ color: currentPreset.accentColor }} />
-            Products & Inventory
+            Produk
           </h1>
-          <p className="text-xs text-slate-400">Total control on catalog items, stock limits, prices, and visibility</p>
+          <p className="text-xs text-slate-400">Kontrol penuh atas katalog produk, batas stok, harga, dan visibilitas</p>
         </div>
 
         <button
@@ -436,9 +435,6 @@ export default function AdminProducts({
                           <div>
                             <span className="block text-slate-900 dark:text-white font-bold text-sm">
                               {p.name}
-                            </span>
-                            <span className="block text-[10px] text-slate-400 font-mono">
-                              /{p.slug}
                             </span>
                           </div>
                         </div>
@@ -589,19 +585,6 @@ export default function AdminProducts({
                     onChange={handleNameChange}
                     placeholder="Contoh: Paracetamol 500mg"
                     className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-500 dark:text-slate-400 mb-1" htmlFor="slug">Slug URL (Url-Friendly)</label>
-                  <input
-                    id="slug"
-                    type="text"
-                    required
-                    value={slug}
-                    onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, ''))}
-                    placeholder="Contoh: paracetamol-500mg"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 focus:outline-none font-mono"
                   />
                 </div>
               </div>

@@ -48,12 +48,12 @@ export default function AdminCustomers({
     <div className="space-y-6">
       {/* Header and totals */}
       <div>
-        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Super Admin</span>
+        <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Admin</span>
         <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
           <Users className="text-slate-450" size={24} style={{ color: currentPreset.accentColor }} />
-          Customers History Log
+          Daftar Pelanggan
         </h1>
-        <p className="text-xs text-slate-400">Track registered buyers, shopping frequencies, average spending index, and invoices</p>
+        <p className="text-xs text-slate-400">Halaman untuk melihat data pelanggan terdaftar, frekuensi belanja, dan riwayat pembelian</p>
       </div>
 
       {/* Control bar */}

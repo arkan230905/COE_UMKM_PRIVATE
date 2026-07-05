@@ -19,28 +19,18 @@ export default function AdminCategories({
 
   // Form states
   const [name, setName] = useState('');
-  const [slug, setSlug] = useState('');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
 
-  // Handle category name typing to auto-generate slug
+  // Handle category name typing
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setName(val);
-    if (!editingCategory) {
-      setSlug(
-        val
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)+/g, '')
-      );
-    }
   };
 
   const handleOpenAdd = () => {
     setEditingCategory(null);
     setName('');
-    setSlug('');
     setDescription('');
     setError('');
     setIsOpenModal(true);
@@ -49,7 +39,6 @@ export default function AdminCategories({
   const handleOpenEdit = (cat: Category) => {
     setEditingCategory(cat);
     setName(cat.name);
-    setSlug(cat.slug);
     setDescription(cat.description);
     setError('');
     setIsOpenModal(true);
@@ -66,22 +55,19 @@ export default function AdminCategories({
     setError('');
 
     if (!name.trim()) return setError('Nama kategori wajib diisi.');
-    if (!slug.trim()) return setError('Slug url wajib diisi.');
 
-    // Duplicate check
-    const isDuplicate = categories.some(
-      c => c.slug.toLowerCase() === slug.toLowerCase() && (!editingCategory || c.id !== editingCategory.id)
-    );
-    if (isDuplicate) {
-      return setError('Slug kategori sudah digunakan. Silakan buat slug yang unik.');
-    }
+    // Auto-generate slug dari nama (untuk keperluan internal saja)
+    const generatedSlug = name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '');
 
     if (editingCategory) {
       // Update
       setCategories(prev =>
         prev.map(c =>
           c.id === editingCategory.id
-            ? { ...c, name, slug, description }
+            ? { ...c, name, slug: generatedSlug, description }
             : c
         )
       );
@@ -90,7 +76,7 @@ export default function AdminCategories({
       const newCat: Category = {
         id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
         name,
-        slug,
+        slug: generatedSlug,
         description,
         createdAt: new Date().toISOString().substring(0, 10),
       };
@@ -111,12 +97,12 @@ export default function AdminCategories({
       {/* Dynamic Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Super Admin</span>
+          <span className="text-xs text-slate-400 font-bold uppercase tracking-wider">Admin</span>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <FolderTree className="text-slate-450" size={24} style={{ color: currentPreset.accentColor }} />
-            Categories Management
+            Manajemen Kategori
           </h1>
-          <p className="text-xs text-slate-400">Manage categories to classify MSME products efficiently</p>
+          <p className="text-xs text-slate-400">Kelola kategori untuk mengklasifikasikan produk UMKM secara efisien</p>
         </div>
 
         {/* Add Product Category Button */}
@@ -154,9 +140,7 @@ export default function AdminCategories({
             <table className="w-full text-left text-xs text-slate-500">
               <thead className="text-[11px] text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/50">
                 <tr>
-                  <th scope="col" className="px-6 py-4">Kategori ID</th>
                   <th scope="col" className="px-6 py-4">Nama Kategori</th>
-                  <th scope="col" className="px-6 py-4">Slug URL</th>
                   <th scope="col" className="px-6 py-4">Deskripsi Singkat</th>
                   <th scope="col" className="px-6 py-4">Tanggal Ditambah</th>
                   <th scope="col" className="px-6 py-4 text-center">Aksi CRUD</th>
@@ -165,14 +149,8 @@ export default function AdminCategories({
               <tbody className="divide-y divide-slate-150 dark:divide-slate-800 font-medium">
                 {filteredCategories.map((cat) => (
                   <tr key={cat.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/20 transition-colors">
-                    <td className="px-6 py-4 font-mono font-bold text-slate-400">
-                      #CAT0{cat.id}
-                    </td>
                     <td className="px-6 py-4 text-slate-900 dark:text-white font-bold text-sm">
                       {cat.name}
-                    </td>
-                    <td className="px-6 py-4 font-mono text-xs text-slate-500 bg-slate-50/50 dark:bg-slate-800/40 rounded px-2 py-1 max-w-[120px] truncate inline-block mt-3 ml-6 self-center">
-                      /{cat.slug}
                     </td>
                     <td className="px-6 py-4 max-w-xs text-slate-400 truncate">
                       {cat.description || <span className="italic text-slate-300">Tidak ada deskripsi</span>}
@@ -253,21 +231,8 @@ export default function AdminCategories({
                   required
                   value={name}
                   onChange={handleNameChange}
-                  placeholder="Contoh: Vitamin & Suplement, Food, Beverages"
+                  placeholder="Contoh: Makanan & Minuman, Pakaian, Elektronik"
                   className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block text-slate-500 dark:text-slate-400 mb-1.5" htmlFor="slug">Slug URL (Url Friendly)</label>
-                <input
-                  id="slug"
-                  type="text"
-                  required
-                  value={slug}
-                  onChange={(e) => setSlug(e.target.value.toLowerCase().replace(/[^a-z0-9-]+/g, ''))}
-                  placeholder="Contoh: vitamins-supplements"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-150 dark:border-slate-800 bg-slate-50 dark:bg-slate-850 text-slate-500 dark:text-slate-400 focus:outline-none font-mono"
                 />
               </div>
 

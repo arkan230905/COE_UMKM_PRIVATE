@@ -70,6 +70,7 @@ export interface Transaction {
   paymentMethod: PaymentMethod;
   notes: string;
   createdAt: string;
+  isOffline?: boolean; // true = transaksi offline/kasir toko, false/undefined = transaksi online
   // Shipping tracking parameters
   shippingStatus?: 'Dalam Antrean' | 'Sedang Dikemas' | 'Sedang Dikirim' | 'Sampai Tujuan';
   courierName?: string;
@@ -117,6 +118,9 @@ export interface Expense {
   quantity?: number; // Jumlah
   unit?: string; // Satuan (kg, liter, pcs, dll)
   pricePerUnit?: number; // Harga per satuan
+  shippingCost?: number; // Biaya kirim dalam rupiah
+  discount?: number; // Diskon dalam rupiah
+  ppnPercent?: number; // PPN (Pajak Pertambahan Nilai) dalam persen (misal: 11 untuk 11%)
 }
 
 // 8. IncomeRecord Entity (mirrors income_records MySQL table)
