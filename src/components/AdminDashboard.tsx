@@ -219,14 +219,14 @@ export default function AdminDashboard({
   // Stat Card structure
   const statCards = [
     {
-      title: 'Total Customers',
+      title: 'Total Pelanggan',
       value: displayCustomerCount,
       percentage: totalCustomers > 0 ? '+12.4%' : '0%',
       icon: Users,
       color: '#6366f1',
     },
     {
-      title: 'Total Transaction',
+      title: 'Total Transaksi',
       value: totalTransactions.toLocaleString('en-US'),
       percentage: '+8.2%',
       icon: FileText,
@@ -234,7 +234,7 @@ export default function AdminDashboard({
       iconColor: 'text-pink-600 dark:text-pink-400',
     },
     {
-      title: 'Total Sales',
+      title: 'Total Penjualan',
       value: totalSales.toLocaleString('en-US'),
       percentage: '+15.3%',
       icon: ShoppingBag,
@@ -242,7 +242,7 @@ export default function AdminDashboard({
       iconColor: 'text-orange-600 dark:text-orange-400',
     },
     {
-      title: 'Total Income',
+      title: 'Total Pendapatan',
       value: formatCurrency(totalIncome),
       percentage: '+23.1%',
       icon: DollarSign,
@@ -271,7 +271,7 @@ export default function AdminDashboard({
       {/* Welcome Topbar Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Welcome Back</span>
+          <span className="text-xs text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">Selamat Datang Kembali</span>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
             {currentPreset.adminName || currentPreset.businessName} <span className="text-xl font-normal text-slate-400">| Admin</span>
           </h1>
@@ -283,7 +283,7 @@ export default function AdminDashboard({
             <Search className="absolute left-3.5 top-2.5 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Search transactions, customers..."
+              placeholder="Cari transaksi, pelanggan..."
               className="w-64 max-w-xs pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-150 dark:border-slate-800 bg-white dark:bg-slate-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2"
               style={{ '--tw-ring-color': currentPreset.accentColor } as React.CSSProperties}
             />
@@ -334,8 +334,8 @@ export default function AdminDashboard({
         <div className="lg:col-span-2 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">Sales Performance</h3>
-              <p className="text-xs text-slate-400">See how your sales grow month by month in years 2024 & 2025</p>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Performa Penjualan</h3>
+              <p className="text-xs text-slate-400">Lihat pertumbuhan penjualan bulanan di tahun 2024 & 2025</p>
             </div>
             {/* Year Toggle options to filter */}
             <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 p-1 rounded-lg border border-slate-100 dark:border-slate-750">
@@ -347,7 +347,7 @@ export default function AdminDashboard({
                     : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
-                Both
+                Semua
               </button>
               <button
                 onClick={() => setSelectedYearLine('2024')}
@@ -439,8 +439,8 @@ export default function AdminDashboard({
         {/* Payment Methods Distribution Pie/Donut Chart */}
         <div className="p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm flex flex-col justify-between">
           <div>
-            <h3 className="font-bold text-slate-900 dark:text-white text-base">Payment Methods</h3>
-            <p className="text-xs text-slate-400">Total transaction types breakdown</p>
+            <h3 className="font-bold text-slate-900 dark:text-white text-base">Metode Pembayaran</h3>
+            <p className="text-xs text-slate-400">Distribusi jenis transaksi pembayaran</p>
           </div>
 
           <div className="relative h-44 my-4 flex items-center justify-center">
@@ -469,7 +469,7 @@ export default function AdminDashboard({
                 {totalTransactions}
               </span>
               <span className="block text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                Total Tx
+                Total 
               </span>
             </div>
           </div>
@@ -522,21 +522,21 @@ export default function AdminDashboard({
         <div className="lg:col-span-2 p-6 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">Top Transactions</h3>
-              <p className="text-xs text-slate-400">Highlights of the highest transactions made this week</p>
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">Transaksi Teratas</h3>
+              <p className="text-xs text-slate-400">Sorotan transaksi tertinggi minggu ini</p>
             </div>
-            <span className="text-xs text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer select-none font-semibold">See All</span>
+            <span className="text-xs text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer select-none font-semibold">Lihat Semua</span>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs text-slate-500">
               <thead className="text-[11px] text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/50 rounded-lg">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Transaction ID</th>
-                  <th scope="col" className="px-4 py-3">Customer ID</th>
-                  <th scope="col" className="px-4 py-3">Date</th>
-                  <th scope="col" className="px-4 py-3">Payment</th>
-                  <th scope="col" className="px-4 py-3 text-right">Purchase</th>
+                  <th scope="col" className="px-4 py-3">ID Transaksi</th>
+                  <th scope="col" className="px-4 py-3">ID Pelanggan</th>
+                  <th scope="col" className="px-4 py-3">Tanggal</th>
+                  <th scope="col" className="px-4 py-3">Pembayaran</th>
+                  <th scope="col" className="px-4 py-3 text-right">Pembelian</th>
                   <th scope="col" className="px-4 py-3 text-center">Detail</th>
                 </tr>
               </thead>
@@ -578,7 +578,7 @@ export default function AdminDashboard({
                           onClick={() => setSelectedTx(tx)}
                           className="p-1 px-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 rounded-md transition-colors cursor-pointer text-[10px] font-bold inline-flex items-center gap-1"
                         >
-                          <Eye size={12} /> View
+                          <Eye size={12} /> Lihat
                         </button>
                       </td>
                     </tr>
