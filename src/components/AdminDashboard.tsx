@@ -199,11 +199,10 @@ export default function AdminDashboard({
     : [{ name: 'No Data', value: 100, color: '#E2E8F0' }];
 
   // Weekly Revenue Performance Data: Based on real transaction data by day of week
-  const weeklyRevenueData = ['Sun', 'Mon', 'Tue', 'Wed', 'Thr', 'Fri', 'Sat'].map(day => {
+  const weeklyRevenueData = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'].map((day, index) => {
     const dayTransactions = transactions.filter(tx => {
       const txDate = new Date(tx.createdAt);
-      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-      return dayNames[txDate.getDay()] === day;
+      return txDate.getDay() === index;
     });
     
     const actualRevenue = dayTransactions.reduce((sum, tx) => 
