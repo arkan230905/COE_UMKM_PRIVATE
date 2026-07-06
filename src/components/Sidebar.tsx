@@ -346,7 +346,7 @@ export default function Sidebar({
               className="w-full flex items-center gap-2.5 px-2 py-2 rounded-xl text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800/40 font-medium text-left cursor-pointer group"
             >
               <HelpCircle size={15} className="text-slate-400 dark:text-slate-500 group-hover:text-slate-900 dark:group-hover:text-white" />
-              {!isCollapsed && <span>Help & FAQ</span>}
+              {!isCollapsed && <span>Bantuan & Panduan</span>}
             </button>
 
             {/* Admin Logout button */}

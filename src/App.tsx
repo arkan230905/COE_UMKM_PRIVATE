@@ -1012,10 +1012,10 @@ export default function App() {
         {/* PREFERENCES > HELP & FAQ MODAL */}
         {isOpenHelp && (
           <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fade-in font-medium text-xs">
-            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 max-w-md w-full p-6 shadow-2xl relative">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 max-w-3xl w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
               <button
                 onClick={() => setIsOpenHelp(false)}
-                className="absolute top-4 right-4 text-slate-450 hover:text-slate-900 p-1 rounded-md text-sm font-bold"
+                className="absolute top-4 right-4 text-slate-450 hover:text-slate-900 dark:hover:text-white p-1 rounded-md text-sm font-bold cursor-pointer z-10"
               >
                 ✕
               </button>
@@ -1025,41 +1025,226 @@ export default function App() {
                   <HelpCircle size={20} />
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900 dark:text-white text-base">Panduan & Bantuan (FAQ)</h4>
-                  <p className="text-xs text-slate-400">Pahami cara kerja simulator multi-role UMKM ini</p>
+                  <h4 className="font-bold text-slate-900 dark:text-white text-base">Panduan Penggunaan Sistem SIUPIN</h4>
+                  <p className="text-xs text-slate-400">Petunjuk lengkap menggunakan semua fitur aplikasi</p>
                 </div>
               </div>
 
               {/* Help entries lists */}
-              <div className="space-y-4 max-h-[300px] overflow-y-auto pr-1">
-                <div className="p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/20">
-                  <span className="font-bold text-indigo-900 dark:text-blue-400 block mb-1">Q: Bagaimana cara berbelanja?</span>
-                  <span className="text-slate-550 leading-relaxed font-semibold">
-                    A: Ganti role Anda ke "Pelanggan" di sidebar badge kiri, pilih menu "Katalog", pilih produk dan klik "Add to Cart". Klik tombol Keranjang di atas, klik checkout, isi data pengantar serta pilih payment gateway, dan klik "Konfirmasi Bayar".
-                  </span>
+              <div className="space-y-4">
+                {/* Dashboard */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-blue-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">📊</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Dashboard</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Halaman utama yang menampilkan ringkasan bisnis Anda: total pendapatan, jumlah produk, transaksi aktif, dan pelanggan. 
+                    Gunakan statistik ini untuk memantau performa UMKM secara real-time.
+                  </p>
                 </div>
 
-                <div className="p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/20">
-                  <span className="font-bold text-indigo-900 dark:text-blue-400 block mb-1">Q: Bagaimana Admin memantau transaksi masuk?</span>
-                  <span className="text-slate-550 leading-relaxed font-semibold">
-                    A: Ganti kembali ke role "Admin", kunjungi tab "Transaction". Anda akan melihat transaksi terbaru yang dibuat oleh customer di tabel paling atas dengan status "Dibayar" / "Menunggu". Anda dapat merubah statusnya menjadi "Selesai" jika barang berhasil difoto/dispatch.
-                  </span>
+                {/* Katalog Produk */}
+                <div className="p-4 bg-gradient-to-br from-purple-50 to-pink-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-purple-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🛍️</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Katalog Produk (Customer)</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium mb-2">
+                    <strong>Untuk Pelanggan:</strong> Ubah role Anda menjadi "Pelanggan" di sidebar. 
+                    Browse katalog produk, tambahkan ke keranjang dengan klik "Add to Cart", lalu checkout untuk menyelesaikan pembelian.
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Isi data pengiriman, pilih metode pembayaran (COD/Transfer/E-Wallet), dan konfirmasi pesanan Anda.
+                  </p>
                 </div>
 
-                <div className="p-3 bg-indigo-50/30 rounded-xl border border-indigo-100/20">
-                  <span className="font-bold text-indigo-900 dark:text-blue-400 block mb-1">Q: Di mana saya dapat meninjau source code Laravel?</span>
-                  <span className="text-slate-550 leading-relaxed font-semibold">
-                    A: Berkas migrasi database MySQL rill dan kode sumber program Laravel 11 telah disediakan lengkap di dalam root folder proyek (<code className="bg-slate-200 px-1 py-0.5 rounded text-indigo-600">/laravel/</code>). Anda tinggal menyalin file tersebut ke sistem web Laravel rill Anda!
-                  </span>
+                {/* Kategori */}
+                <div className="p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-green-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🏷️</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Kategori</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Kelola kategori produk Anda (contoh: Elektronik, Fashion, Makanan). 
+                    Klik "Tambah Kategori Baru" untuk membuat kategori, atau edit/hapus kategori yang sudah ada. 
+                    Kategori membantu mengorganisir produk agar mudah dicari pelanggan.
+                  </p>
+                </div>
+
+                {/* Produk */}
+                <div className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-orange-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">📦</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Produk</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Kelola semua produk UMKM Anda di sini. Klik "Tambah Produk Baru" untuk menambah item, 
+                    isi nama produk, deskripsi, harga, stok, barcode, dan pilih kategori. 
+                    Anda bisa edit harga/stok atau hapus produk kapan saja. Stok akan otomatis berkurang saat ada transaksi.
+                  </p>
+                </div>
+
+                {/* Transaksi Penjualan */}
+                <div className="p-4 bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-blue-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">💳</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Transaksi Penjualan</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium mb-2">
+                    <strong>Penjualan Online:</strong> Lihat semua transaksi dari pelanggan yang order lewat katalog online. 
+                    Update status pengiriman (Diproses → Dikirim → Selesai). Cetak invoice untuk setiap transaksi.
+                  </p>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    <strong>Penjualan Offline (Kasir):</strong> Klik "Transaksi Kasir" untuk mencatat penjualan di toko fisik. 
+                    Scan barcode atau ketik nama produk, atur quantity, pilih metode pembayaran, dan selesaikan transaksi langsung.
+                  </p>
+                </div>
+
+                {/* Pelanggan */}
+                <div className="p-4 bg-gradient-to-br from-pink-50 to-rose-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-pink-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">👥</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Daftar Pelanggan</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Database semua pelanggan yang pernah berbelanja di UMKM Anda. 
+                    Lihat riwayat transaksi, kontak, dan alamat setiap pelanggan. 
+                    Gunakan informasi ini untuk customer relationship management (CRM).
+                  </p>
+                </div>
+
+                {/* Pengeluaran Kas */}
+                <div className="p-4 bg-gradient-to-br from-red-50 to-orange-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-red-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">💰</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Pengeluaran Kas</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Catat semua pengeluaran bisnis Anda: Pembelian Stok, Operasional (listrik, sewa), Gaji Karyawan, dan Lainnya. 
+                    Untuk Pembelian Stok, isi jumlah, harga, biaya kirim, diskon, dan PPN (%). 
+                    Semua pengeluaran akan tercatat dan masuk ke laporan keuangan.
+                  </p>
+                </div>
+
+                {/* Laporan Keuangan */}
+                <div className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-indigo-100 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">📈</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Laporan Keuangan & Profitabilitas</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Analisis keuangan lengkap: total pemasukan (penjualan online + offline), total pengeluaran, dan laba/rugi bersih. 
+                    Filter berdasarkan periode waktu. Ekspor laporan ke PDF untuk dokumentasi atau laporan ke stakeholder. 
+                    Gunakan data ini untuk pengambilan keputusan bisnis.
+                  </p>
+                </div>
+
+                {/* Pengaturan */}
+                <div className="p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">⚙️</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-sm">Pengaturan Profil UMKM</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium">
+                    Update informasi bisnis Anda: nama toko, sektor industri, email admin, nomor kontak, mata uang, dan alamat. 
+                    Informasi ini akan muncul di invoice dan komunikasi dengan pelanggan. 
+                    Kode UMKM bersifat permanen dan tidak bisa diubah (untuk identifikasi multi-tenant).
+                  </p>
+                </div>
+
+                {/* Kontak Pembuat */}
+                <div className="mt-6 p-5 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-slate-800 dark:to-slate-850 rounded-xl border-2 border-teal-200 dark:border-teal-900">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xl">📞</span>
+                    <span className="font-bold text-slate-900 dark:text-white text-base">Butuh Bantuan Lebih Lanjut?</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-slate-300 leading-relaxed font-medium mb-3">
+                    Hubungi tim pengembang kami untuk dukungan teknis, konsultasi, atau kustomisasi sistem:
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <a 
+                      href="https://wa.me/6289561985919?text=Halo%20Arkan,%20saya%20butuh%20bantuan%20terkait%20SIUPIN"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-teal-200 dark:border-slate-700 hover:shadow-md transition cursor-pointer"
+                    >
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-lg shrink-0">
+                        <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">Arkan Abiyyu</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-mono">0895-6198-59193</p>
+                      </div>
+                    </a>
+
+                    <a 
+                      href="https://wa.me/6282118959085?text=Halo%20Nayla,%20saya%20butuh%20bantuan%20terkait%20SIUPIN"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-teal-200 dark:border-slate-700 hover:shadow-md transition cursor-pointer"
+                    >
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-lg shrink-0">
+                        <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">Nayla Dzakira</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-mono">0821-1895-9085</p>
+                      </div>
+                    </a>
+
+                    <a 
+                      href="https://wa.me/6281298226841?text=Halo%20Ghitha,%20saya%20butuh%20bantuan%20terkait%20SIUPIN"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-teal-200 dark:border-slate-700 hover:shadow-md transition cursor-pointer"
+                    >
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-lg shrink-0">
+                        <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">Ghitha Nadhirah</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-mono">0812-9822-6841</p>
+                      </div>
+                    </a>
+
+                    <a 
+                      href="https://wa.me/6285659739659?text=Halo%20Chindi,%20saya%20butuh%20bantuan%20terkait%20SIUPIN"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-3 p-3 bg-white dark:bg-slate-900 rounded-lg border border-teal-200 dark:border-slate-700 hover:shadow-md transition cursor-pointer"
+                    >
+                      <div className="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white text-lg shrink-0">
+                        <svg viewBox="0 0 24 24" className="w-6 h-6" fill="currentColor">
+                          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-slate-900 dark:text-white text-sm">Chindi Lestari</p>
+                        <p className="text-xs text-slate-600 dark:text-slate-400 font-mono">0856-5973-9659</p>
+                      </div>
+                    </a>
+                  </div>
+
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-3 text-center italic">
+                    💡 Klik kartu untuk langsung chat WhatsApp
+                  </p>
                 </div>
               </div>
 
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setIsOpenHelp(false)}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold rounded-xl"
+                  className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md cursor-pointer"
                 >
-                  Paham, Tutup Panduan
+                  Mengerti, Tutup Panduan
                 </button>
               </div>
             </div>

@@ -22,6 +22,7 @@ export default function AdminFinancialReport({
 }: AdminFinancialReportProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [isOpenManualIncome, setIsOpenManualIncome] = useState(false);
+  const [isExportingPDF, setIsExportingPDF] = useState(false);
 
   // Manual Income Form states
   const [amount, setAmount] = useState<number>(0);
@@ -119,21 +120,54 @@ export default function AdminFinancialReport({
   );
 
   // Export PDF Function with detailed report
-  const handleExportPDF = () => {
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    let yPosition = 20;
-
-    // Helper function to check if we need a new page
-    const checkAddPage = (neededSpace: number) => {
-      if (yPosition + neededSpace > pageHeight - 20) {
-        doc.addPage();
-        yPosition = 20;
-        return true;
+  const handleExportPDF = async () => {
+    setIsExportingPDF(true);
+    
+    try {
+      console.log('🚀 Starting PDF generation...');
+      
+      // Validate data
+      if (!currentPreset || !currentPreset.businessName) {
+        throw new Error('Data UMKM tidak lengkap');
       }
-      return false;
-    };
+      
+      console.log('📊 Data validation passed');
+      console.log('Income records:', combinedIncomesList.length);
+      console.log('Expenses:', expenses.length);
+      
+      // Small delay to show loading state
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      console.log('📄 Creating PDF document...');
+      
+      // Import jsPDF fresh to ensure autoTable is attached
+      const { default: jsPDF } = await import('jspdf');
+      await import('jspdf-autotable');
+      
+      console.log('✅ jsPDF and autoTable loaded');
+      
+      const doc = new jsPDF() as any;
+      
+      // Verify autoTable is available
+      if (typeof doc.autoTable !== 'function') {
+        throw new Error('autoTable plugin tidak ter-load dengan benar. Silakan refresh halaman dan coba lagi.');
+      }
+      
+      console.log('✅ autoTable verified as function');
+      
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const pageHeight = doc.internal.pageSize.getHeight();
+      let yPosition = 20;
+
+      // Helper function to check if we need a new page
+      const checkAddPage = (neededSpace: number) => {
+        if (yPosition + neededSpace > pageHeight - 20) {
+          doc.addPage();
+          yPosition = 20;
+          return true;
+        }
+        return false;
+      };
 
     // Header
     doc.setFillColor(30, 58, 95); // Navy blue
@@ -146,10 +180,10 @@ export default function AdminFinancialReport({
     
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text(currentPreset.businessName, pageWidth / 2, 25, { align: 'center' });
+    doc.text(currentPreset.businessName || 'UMKM', pageWidth / 2, 25, { align: 'center' });
     
     doc.setFontSize(9);
-    doc.text(`Sektor: ${currentPreset.industry}`, pageWidth / 2, 32, { align: 'center' });
+    doc.text(`Sektor: ${currentPreset.industry || '-'}`, pageWidth / 2, 32, { align: 'center' });
 
     yPosition = 50;
 
@@ -159,8 +193,8 @@ export default function AdminFinancialReport({
     doc.setFont('helvetica', 'normal');
     doc.text(`Tanggal Cetak: ${new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' })}`, 14, yPosition);
     doc.text(`Waktu: ${new Date().toLocaleTimeString('id-ID')}`, 14, yPosition + 5);
-    doc.text(`Alamat: ${currentPreset.address}`, 14, yPosition + 10);
-    doc.text(`Telepon: ${currentPreset.phone}`, 14, yPosition + 15);
+    doc.text(`Alamat: ${currentPreset.address || '-'}`, 14, yPosition + 10);
+    doc.text(`Telepon: ${currentPreset.phone || '-'}`, 14, yPosition + 15);
     
     yPosition += 25;
 
@@ -240,18 +274,18 @@ export default function AdminFinancialReport({
     const incomeTableData = combinedIncomesList.map((item, index) => {
       // Check if it's a transaction by looking at the description pattern
       const isTransaction = item.transactionId !== null;
-      const isOffline = isTransaction && item.description.includes('Offline/Toko');
+      const isOffline = isTransaction && item.description && item.description.includes('Offline/Toko');
       
       return [
         (index + 1).toString(),
-        item.date,
-        item.description,
-        formatCurrency(item.amount),
+        item.date || '-',
+        item.description || '-',
+        formatCurrency(item.amount || 0),
         isTransaction ? (isOffline ? 'Penjualan Offline' : 'Penjualan Online') : 'Manual'
       ];
     });
 
-    (doc as any).autoTable({
+    doc.autoTable({
       startY: yPosition,
       head: [['No', 'Tanggal', 'Deskripsi', 'Jumlah', 'Sumber']],
       body: incomeTableData,
@@ -279,7 +313,7 @@ export default function AdminFinancialReport({
       }
     });
 
-    yPosition = (doc as any).lastAutoTable.finalY + 10;
+    yPosition = doc.lastAutoTable.finalY + 10;
 
     // Income Summary
     checkAddPage(20);
@@ -318,15 +352,15 @@ export default function AdminFinancialReport({
 
       const stockTableData = stockPurchases.map((exp, index) => [
         (index + 1).toString(),
-        exp.date,
+        exp.date || '-',
         exp.materialName || '-',
-        `${exp.quantity || 0} ${exp.unit || ''}`,
+        `${exp.quantity || 0} ${exp.unit || ''}`.trim(),
         formatCurrency(exp.pricePerUnit || 0),
-        formatCurrency(exp.amount),
+        formatCurrency(exp.amount || 0),
         exp.notes || '-'
       ]);
 
-      (doc as any).autoTable({
+      doc.autoTable({
         startY: yPosition,
         head: [['No', 'Tanggal', 'Nama Bahan', 'Qty', 'Harga/Unit', 'Total', 'Catatan']],
         body: stockTableData,
@@ -353,7 +387,7 @@ export default function AdminFinancialReport({
         margin: { left: 14, right: 14 }
       });
 
-      yPosition = (doc as any).lastAutoTable.finalY + 8;
+      yPosition = doc.lastAutoTable.finalY + 8;
       
       // Stock Subtotal
       const stockTotal = stockPurchases.reduce((sum, e) => sum + e.amount, 0);
@@ -376,14 +410,14 @@ export default function AdminFinancialReport({
 
       const expenseTableData = otherExpenses.map((exp, index) => [
         (index + 1).toString(),
-        exp.date,
-        exp.expenseCategory,
-        exp.description,
-        formatCurrency(exp.amount),
+        exp.date || '-',
+        exp.expenseCategory || '-',
+        exp.description || '-',
+        formatCurrency(exp.amount || 0),
         exp.notes || '-'
       ]);
 
-      (doc as any).autoTable({
+      doc.autoTable({
         startY: yPosition,
         head: [['No', 'Tanggal', 'Kategori', 'Deskripsi', 'Jumlah', 'Catatan']],
         body: expenseTableData,
@@ -409,7 +443,7 @@ export default function AdminFinancialReport({
         margin: { left: 14, right: 14 }
       });
 
-      yPosition = (doc as any).lastAutoTable.finalY + 8;
+      yPosition = doc.lastAutoTable.finalY + 8;
       
       // Other Expenses Subtotal
       const otherTotal = otherExpenses.reduce((sum, e) => sum + e.amount, 0);
@@ -450,7 +484,7 @@ export default function AdminFinancialReport({
     const profitMargin = totalIncome > 0 ? ((netProfit / totalIncome) * 100).toFixed(2) : '0.00';
     const profitStatus = netProfit >= 0 ? 'LABA' : 'RUGI';
     
-    (doc as any).autoTable({
+    doc.autoTable({
       startY: yPosition,
       body: [
         ['Total Pendapatan (Income)', formatCurrency(totalIncome)],
@@ -472,7 +506,7 @@ export default function AdminFinancialReport({
       margin: { left: 14, right: 14 }
     });
 
-    yPosition = (doc as any).lastAutoTable.finalY + 15;
+    yPosition = doc.lastAutoTable.finalY + 15;
 
     // Footer
     const totalPages = (doc as any).internal.getNumberOfPages();
@@ -495,8 +529,18 @@ export default function AdminFinancialReport({
     }
 
     // Save PDF
-    const fileName = `Laporan-Keuangan-${currentPreset.businessName.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
+    const fileName = `Laporan-Keuangan-${(currentPreset.businessName || 'UMKM').replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`;
     doc.save(fileName);
+    
+    console.log('✅ PDF berhasil dibuat:', fileName);
+    
+    } catch (error) {
+      console.error('❌ Error generating PDF:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Terjadi kesalahan saat membuat PDF:\n${errorMessage}\n\nSilakan cek browser console (F12) untuk detail lebih lanjut.`);
+    } finally {
+      setIsExportingPDF(false);
+    }
   };
 
   return (
@@ -521,9 +565,19 @@ export default function AdminFinancialReport({
           </button>
           <button
             onClick={handleExportPDF}
-            className="flex items-center gap-2 px-3.5 py-2 text-xs text-slate-700 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-slate-200 font-bold rounded-xl cursor-pointer transition"
+            disabled={isExportingPDF}
+            className="flex items-center gap-2 px-3.5 py-2 text-xs text-slate-700 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 dark:text-slate-200 font-bold rounded-xl cursor-pointer transition disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <FileSpreadsheet size={15} /> Export Laporan PDF
+            {isExportingPDF ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-slate-300 border-t-slate-700"></div>
+                <span>Membuat PDF...</span>
+              </>
+            ) : (
+              <>
+                <FileSpreadsheet size={15} /> Export Laporan PDF
+              </>
+            )}
           </button>
         </div>
       </div>
@@ -730,3 +784,6 @@ export default function AdminFinancialReport({
     </div>
   );
 }
+
+
+

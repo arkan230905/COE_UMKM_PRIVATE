@@ -151,7 +151,16 @@ export default function CashierPOS({
       status: 'completed',
       paymentMethod: paymentMethod,
       notes: notes || 'Transaksi Kasir Langsung POS',
-      createdAt: new Date().toISOString()
+      isOffline: true,
+      createdAt: new Date().toISOString(),
+      items: selectedItems.map(item => ({
+        productId: item.product.id,
+        productName: item.product.name,
+        categoryName: '', // Could be populated from category lookup
+        quantity: item.quantity,
+        price: item.product.price,
+        subtotal: item.product.price * item.quantity
+      }))
     };
 
     // Deduct stock in parent state
