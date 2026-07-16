@@ -11,11 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // 1. Modify existing Users Table to add additional fields
+        // 1. Modify existing Users Table to add additional fields (only if not exists)
         Schema::table('users', function (Blueprint $table) {
-            $table->enum('role', ['super_admin', 'customer'])->default('customer')->after('password');
-            $table->string('phone')->nullable()->after('role');
-            $table->text('address')->nullable()->after('phone');
+            if (!Schema::hasColumn('users', 'role')) {
+                $table->enum('role', ['super_admin', 'customer'])->default('customer')->after('password');
+            }
+            if (!Schema::hasColumn('users', 'phone')) {
+                $table->string('phone')->nullable()->after(Schema::hasColumn('users', 'role') ? 'role' : 'password');
+            }
+            if (!Schema::hasColumn('users', 'address')) {
+                $table->text('address')->nullable()->after('phone');
+            }
         });
 
         // 2. Categories Table
