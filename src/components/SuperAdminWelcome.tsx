@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
-import { Shield, Lock, CheckCircle, Landmark, HelpCircle, User, Key, ArrowRight, Activity } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Shield, Lock, CheckCircle, Landmark, HelpCircle, User, Key, ArrowRight, Activity, Loader } from 'lucide-react';
 import { UMKMPreset, Category, Product } from '../types';
+import storageService from '../services/storage';
 
 interface SuperAdminWelcomeProps {
   allPresets: UMKMPreset[];
@@ -26,6 +27,7 @@ export default function SuperAdminWelcome({
   const [activeMode, setActiveMode] = useState<'login' | 'register'>('login');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   // Login Form States
   const [loginRole, setLoginRole] = useState<'admin' | 'kasir'>('admin');
@@ -41,29 +43,69 @@ export default function SuperAdminWelcome({
   const [regEmail, setRegEmail] = useState('');
   const [regPassword, setRegPassword] = useState('');
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Load UMKM presets from database on mount
+  useEffect(() => {
+    loadPresetsFromDatabase();
+  }, []);
+
+  const loadPresetsFromDatabase = async () => {
+    try {
+      const presets = await storageService.getUmkmPresets();
+      if (presets && presets.length > 0) {
+        setAllPresets(presets);
+        console.log('✅ Loaded UMKM presets from database:', presets.length);
+      }
+    } catch (error) {
+      console.error('Error loading UMKM presets:', error);
+    }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    setIsLoading(true);
 
-    if (!inputUmkmCode.trim()) {
-      setErrorMsg('Pemberitahuan: Kode UMKM wajib dimasukkan.');
-      return;
+    try {
+      if (!inputUmkmCode.trim()) {
+        setErrorMsg('Pemberitahuan: Kode UMKM wajib dimasukkan.');
+        setIsLoading(false);
+        return;
+      }
+
+      // Try to find from database first
+      const preset = await storageService.getUmkmPresetByCode(inputUmkmCode.trim().toUpperCase());
+
+      if (!preset) {
+        // Fallback to allPresets array
+        const localPreset = allPresets.find(
+          p => p.umkmCode.trim().toUpperCase() === inputUmkmCode.trim().toUpperCase()
+        );
+        
+        if (!localPreset) {
+          setErrorMsg('Kode UMKM tidak valid atau belum terdaftar di sistem.');
+          setIsLoading(false);
+          return;
+        }
+        
+        // Use local preset if database fails
+        proceedWithLogin(localPreset);
+      } else {
+        // Use database preset
+        proceedWithLogin(preset);
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setErrorMsg('Terjadi kesalahan saat login. Silakan coba lagi.');
+      setIsLoading(false);
     }
+  };
 
-    // Find preset by umkmCode (case-insensitive)
-    const preset = allPresets.find(
-      p => p.umkmCode.trim().toUpperCase() === inputUmkmCode.trim().toUpperCase()
-    );
-
-    if (!preset) {
-      setErrorMsg('Kode UMKM tidak valid atau belum terdaftar di sistem.');
-      return;
-    }
-
+  const proceedWithLogin = (preset: UMKMPreset) => {
     if (loginRole === 'admin') {
       if (!loginEmail.trim() || !loginPassword.trim()) {
         setErrorMsg('Pemberitahuan: Email dan Sandi Admin wajib diisi untuk masuk sebagai Admin.');
+        setIsLoading(false);
         return;
       }
       // Success Admin Login
@@ -78,100 +120,109 @@ export default function SuperAdminWelcome({
       setIsSuperAdminLoggedIn(true);
       setSuccessMsg('Login Kasir Berhasil! Mengalihkan ke POS Supermarket...');
     }
+    setIsLoading(false);
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
     setSuccessMsg('');
+    setIsLoading(true);
 
-    if (!adminName.trim()) return setErrorMsg('Nama Lengkap Owner wajib diisi.');
-    if (!brandName.trim()) return setErrorMsg('Nama UMKM wajib diisi.');
-    if (!regEmail.trim()) return setErrorMsg('Email Admin wajib diisi.');
-    if (!regPassword.trim() || regPassword.length < 4) return setErrorMsg('Kata Sandi minimal 4 karakter.');
+    try {
+      if (!adminName.trim()) {
+        setErrorMsg('Nama Lengkap Owner wajib diisi.');
+        setIsLoading(false);
+        return;
+      }
+      if (!brandName.trim()) {
+        setErrorMsg('Nama UMKM wajib diisi.');
+        setIsLoading(false);
+        return;
+      }
+      if (!regEmail.trim()) {
+        setErrorMsg('Email Admin wajib diisi.');
+        setIsLoading(false);
+        return;
+      }
+      if (!regPassword.trim() || regPassword.length < 4) {
+        setErrorMsg('Kata Sandi minimal 4 karakter.');
+        setIsLoading(false);
+        return;
+      }
 
-    // Check if email already exists in registered UMKMs
-    const emailConflict = allPresets.find(p => p.adminEmail?.trim().toLowerCase() === regEmail.trim().toLowerCase());
-    if (emailConflict) {
-      setErrorMsg(`Email "${regEmail}" sudah terdaftar untuk UMKM "${emailConflict.businessName}". Setiap admin harus memiliki email yang unik.`);
-      return;
+      // Check if email already exists
+      const emailConflict = allPresets.find(p => p.adminEmail?.trim().toLowerCase() === regEmail.trim().toLowerCase());
+      if (emailConflict) {
+        setErrorMsg(`Email "${regEmail}" sudah terdaftar untuk UMKM "${emailConflict.businessName}". Setiap admin harus memiliki email yang unik.`);
+        setIsLoading(false);
+        return;
+      }
+
+      const slug = brandName.trim().toUpperCase().replace(/\s+/g, '-');
+      const nameConflict = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug);
+
+      if (nameConflict) {
+        setErrorMsg(`Nama UMKM "${brandName}" sudah terdaftar di sistem. Ganti nama usaha Anda.`);
+        setIsLoading(false);
+        return;
+      }
+
+      // Auto generate a unique alphanumeric UMKM Code
+      const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+      const shortPrefix = brandName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z]/g, 'X');
+      const generatedCode = `${shortPrefix}-${randomSuffix}`;
+
+      // Set default values
+      const defaultBrandColor = '#1E3A5F'; // Deep Navy as default
+      const defaultIndustry = 'Umum'; // Default industry
+
+      const newPreset: Omit<UMKMPreset, 'id'> = {
+        umkmCode: generatedCode,
+        businessName: brandName.trim(),
+        industry: defaultIndustry,
+        logoText: brandName.trim().substring(0, 3).toUpperCase(),
+        primaryColor: defaultBrandColor,
+        accentColor: defaultBrandColor + 'dd',
+        currency: 'Rp',
+        phone: phone || '0812-9988-1122',
+        address: address || 'Alamat Utama UMKM Terdaftar',
+        adminName: adminName.trim(),
+        adminEmail: regEmail.trim(),
+      };
+
+      // Save to database
+      const savedPreset = await storageService.saveUmkmPreset(newPreset);
+
+      // Update local state
+      setAllPresets(prev => [...prev, savedPreset]);
+      setCurrentPreset(savedPreset);
+
+      // Show success message with code
+      setSuccessMsg(
+        `Pendaftaran Berhasil! Kode UMKM Anda adalah: ${generatedCode}. Simpan kode ini untuk login!`
+      );
+
+      // Reset fields
+      setAdminName('');
+      setBrandName('');
+      setPhone('');
+      setAddress('');
+      setRegEmail('');
+      setRegPassword('');
+
+      setIsLoading(false);
+
+      // After 4 seconds, direct them to log in automatically as Admin
+      setTimeout(() => {
+        setRole('super_admin');
+        setIsSuperAdminLoggedIn(true);
+      }, 4500);
+    } catch (error) {
+      console.error('Registration error:', error);
+      setErrorMsg('Gagal mendaftar UMKM. Silakan coba lagi.');
+      setIsLoading(false);
     }
-
-    const slug = brandName.trim().toUpperCase().replace(/\s+/g, '-');
-    const nameConflict = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug);
-
-    if (nameConflict) {
-      setErrorMsg(`Nama UMKM "${brandName}" sudah terdaftar di sistem. Ganti nama usaha Anda.`);
-      return;
-    }
-
-    // Auto generate a unique alphanumeric UMKM Code
-    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-    const shortPrefix = brandName.trim().substring(0, 4).toUpperCase().replace(/[^A-Z]/g, 'X');
-    const generatedCode = `UMKM-${shortPrefix}-${randomSuffix}`;
-
-    // Set default values
-    const defaultBrandColor = '#1E3A5F'; // Deep Navy as default for all
-    const defaultIndustry = 'Umum'; // Default industry
-
-    const newPresetId = slug.toLowerCase() + '_' + Date.now();
-    const newPreset: UMKMPreset = {
-      id: newPresetId,
-      umkmCode: generatedCode,
-      businessName: brandName.trim(),
-      industry: defaultIndustry,
-      logoText: brandName.trim().substring(0, 3).toUpperCase(),
-      primaryColor: defaultBrandColor,
-      accentColor: defaultBrandColor + 'dd',
-      currency: 'Rp',
-      phone: phone || '0812-9988-1122',
-      address: address || 'Alamat Utama UMKM Terdaftar',
-      adminName: adminName.trim(),
-      adminEmail: regEmail.trim(),
-    };
-
-    // NOTE: No automatic starter data - new UMKM starts with empty categories and products
-    // All data must be entered manually by the UMKM owner
-    let starterCats: Category[] = [];
-    let starterProds: Product[] = [];
-
-    // Save starter databases to localStorage for simulation
-    const prefix = `umkm_${newPresetId}_`;
-    localStorage.setItem(`${prefix}categories`, JSON.stringify(starterCats));
-    localStorage.setItem(`${prefix}products`, JSON.stringify(starterProds));
-    localStorage.setItem(`${prefix}expenses`, JSON.stringify([]));
-    localStorage.setItem(`${prefix}transactions`, JSON.stringify([]));
-    localStorage.setItem(`${prefix}incomes`, JSON.stringify([]));
-
-    // Update preset database
-    setAllPresets(prev => {
-      const next = [...prev, newPreset];
-      localStorage.setItem('umkm_presets', JSON.stringify(next));
-      return next;
-    });
-
-    setCategories(starterCats);
-    setProducts(starterProds);
-    setCurrentPreset(newPreset);
-
-    // Show registered code in success message
-    setSuccessMsg(
-      `Pendaftaran Berhasil! Kode UMKM Anda adalah: ${generatedCode}. Simpan kode ini untuk login!`
-    );
-
-    // Reset fields
-    setAdminName('');
-    setBrandName('');
-    setPhone('');
-    setAddress('');
-    setRegEmail('');
-    setRegPassword('');
-
-    // After 4 seconds, direct them to log in automatically as Admin
-    setTimeout(() => {
-      setRole('super_admin');
-      setIsSuperAdminLoggedIn(true);
-    }, 4500);
   };
 
   return (
@@ -267,6 +318,14 @@ export default function SuperAdminWelcome({
               </div>
             )}
 
+            {/* Database Status Indicator */}
+            {storageService.isUsingApi() && (
+              <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900 rounded-lg flex items-center gap-2 text-[10px]">
+                <Activity size={12} className="text-blue-500 animate-pulse" />
+                <span className="text-blue-700 dark:text-blue-400 font-bold">Sistem terhubung ke Database MySQL</span>
+              </div>
+            )}
+
             {/* LOGIN PANEL FORM */}
             {activeMode === 'login' ? (
               <form onSubmit={handleLogin} className="space-y-4">
@@ -329,9 +388,18 @@ export default function SuperAdminWelcome({
 
                 <button
                   type="submit"
-                  className="w-full py-3 text-white font-bold bg-[#1E3A5F] hover:bg-[#14263f] hover:scale-[1.01] transition rounded-lg text-xs tracking-wider cursor-pointer shadow-md mt-4 flex items-center justify-center gap-2"
+                  disabled={isLoading}
+                  className="w-full py-3 text-white font-bold bg-[#1E3A5F] hover:bg-[#14263f] hover:scale-[1.01] transition rounded-lg text-xs tracking-wider cursor-pointer shadow-md mt-4 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <ArrowRight size={14} /> Masuk Untuk Mengelola {loginRole === 'admin' ? 'Dashboard' : 'Kasir POS'}
+                  {isLoading ? (
+                    <>
+                      <Loader size={14} className="animate-spin" /> Memuat...
+                    </>
+                  ) : (
+                    <>
+                      <ArrowRight size={14} /> Masuk Untuk Mengelola {loginRole === 'admin' ? 'Dashboard' : 'Kasir POS'}
+                    </>
+                  )}
                 </button>
               </form>
             ) : (

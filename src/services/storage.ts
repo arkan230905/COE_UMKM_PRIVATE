@@ -49,7 +49,23 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getUmkmPresets();
-        return response.data || [];
+        const data = response.data || [];
+        
+        // Map backend format to frontend format
+        return data.map((item: any) => ({
+          id: item.id?.toString() || item.id,
+          umkmCode: item.umkm_code || item.umkmCode,
+          businessName: item.business_name || item.businessName,
+          industry: item.industry,
+          logoText: item.logo_text || item.logoText,
+          primaryColor: item.primary_color || item.primaryColor,
+          accentColor: item.accent_color || item.accentColor,
+          currency: item.currency,
+          phone: item.phone,
+          address: item.address,
+          adminName: item.admin_name || item.adminName,
+          adminEmail: item.admin_email || item.adminEmail,
+        }));
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<UMKMPreset>('umkm_presets');
@@ -62,7 +78,25 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getUmkmPresetByCode(code);
-        return response.data as UMKMPreset;
+        const data = response.data as any;
+        
+        if (!data) return null;
+        
+        // Map backend format to frontend format
+        return {
+          id: data.id?.toString() || data.id,
+          umkmCode: data.umkm_code || data.umkmCode,
+          businessName: data.business_name || data.businessName,
+          industry: data.industry,
+          logoText: data.logo_text || data.logoText,
+          primaryColor: data.primary_color || data.primaryColor,
+          accentColor: data.accent_color || data.accentColor,
+          currency: data.currency,
+          phone: data.phone,
+          address: data.address,
+          adminName: data.admin_name || data.adminName,
+          adminEmail: data.admin_email || data.adminEmail,
+        };
       } catch (error) {
         console.error('API Error:', error);
         // Fallback to localStorage

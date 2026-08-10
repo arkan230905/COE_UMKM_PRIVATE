@@ -26,15 +26,7 @@ import {
   CartItem
 } from './types';
 
-import {
-  UMKM_PRESETS,
-  DEFAULT_USERS,
-  PRESETS_CATEGORIES,
-  PRESETS_PRODUCTS,
-  DEFAULT_EXPENSES,
-  DEFAULT_MOCK_TRANSACTIONS,
-  DEFAULT_INCOMES
-} from './data/mockData';
+import storageService from './services/storage';
 
 import { Settings, Shield, Store, HelpCircle, Laptop, Landmark, Receipt, Info, AlertCircle, Trash } from 'lucide-react';
 
@@ -83,7 +75,7 @@ export default function App() {
     };
   });
 
-  // App Master Database structures (mirrors MySQL Tables!)
+  // App Master Database structures - ALL FROM DATABASE!
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -93,11 +85,62 @@ export default function App() {
   // Manage customer users in state
   const [allCustomers, setAllCustomers] = useState<Customer[]>([]);
   
-  // Manage all registered UMKM presets
-  const [allPresets, setAllPresets] = useState<UMKMPreset[]>(() => {
-    const stored = localStorage.getItem('umkm_presets');
-    return stored ? JSON.parse(stored) : [];
-  });
+  // Manage all registered UMKM presets - FROM DATABASE!
+  const [allPresets, setAllPresets] = useState<UMKMPreset[]>([]);
+  
+  // Load all UMKM presets from database on mount
+  useEffect(() => {
+    loadAllDataFromDatabase();
+  }, []);
+
+  // Load data when currentPreset changes
+  useEffect(() => {
+    if (currentPreset.id !== 'placeholder' && isSuperAdminLoggedIn) {
+      loadPresetDataFromDatabase();
+    }
+  }, [currentPreset.id, isSuperAdminLoggedIn]);
+
+  const loadAllDataFromDatabase = async () => {
+    try {
+      console.log('🔄 Loading UMKM presets from database...');
+      const presets = await storageService.getUmkmPresets();
+      setAllPresets(presets);
+      console.log('✅ Loaded', presets.length, 'UMKM presets from database');
+    } catch (error) {
+      console.error('❌ Error loading UMKM presets:', error);
+    }
+  };
+
+  const loadPresetDataFromDatabase = async () => {
+    try {
+      console.log('🔄 Loading data for UMKM:', currentPreset.umkmCode);
+      
+      // Load all data from database
+      const [cats, prods, custs, exps, trans] = await Promise.all([
+        storageService.getCategories(),
+        storageService.getProducts(),
+        storageService.getCustomers(),
+        storageService.getExpenses(),
+        storageService.getTransactions()
+      ]);
+
+      setCategories(cats);
+      setProducts(prods);
+      setAllCustomers(custs);
+      setExpenses(exps);
+      setTransactions(trans);
+      
+      console.log('✅ Data loaded:', {
+        categories: cats.length,
+        products: prods.length,
+        customers: custs.length,
+        expenses: exps.length,
+        transactions: trans.length
+      });
+    } catch (error) {
+      console.error('❌ Error loading preset data:', error);
+    }
+  };
   
   // Logged in customer user context (starts as null / guest!)
   const [currentUser, setCurrentUser] = useState<Customer | null>(null);
@@ -133,14 +176,7 @@ export default function App() {
   const [regUMKMAddress, setRegUMKMAddress] = useState('');
   const [regUMKMColor, setRegUMKMColor] = useState('#4f46e5'); // Indigo default
 
-  // Synchronizers of state changes to LocalStorage
-  useEffect(() => {
-    localStorage.setItem('umkm_presets', JSON.stringify(allPresets));
-  }, [allPresets]);
-
-  useEffect(() => {
-    localStorage.setItem('user_customers', JSON.stringify(allCustomers));
-  }, [allCustomers]);
+  // NO MORE localStorage sync - all data from database!
 
   // Client-Side Routing logic matching requested patterns in prompt
   useEffect(() => {
@@ -312,15 +348,12 @@ export default function App() {
 
   useEffect(() => {
     if (currentPreset.id !== 'placeholder') {
-      localStorage.setItem(`umkm_${currentPreset.id}_customers`, JSON.stringify(allCustomers));
+      // All customer data now saved to database automatically
+      console.log('✅ Customer data will be saved to database');
     }
   }, [allCustomers, currentPreset]);
 
-  useEffect(() => {
-    localStorage.setItem('umkm_presets', JSON.stringify(allPresets));
-  }, [allPresets]);
-
-  // Switch presets gracefully (Pharmacy, Cafe, Boutique, Grocery)
+  // Switch presets gracefully
   const handleSwitchPreset = (presetId: string) => {
     const target = allPresets.find(p => p.id === presetId);
     if (target) {
