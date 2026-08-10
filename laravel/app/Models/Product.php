@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Product extends Model
 {
     protected $fillable = [
+        'umkm_preset_id',
         'category_id',
         'name',
         'slug',
@@ -24,6 +25,14 @@ class Product extends Model
         'is_active' => 'boolean',
         'stock' => 'integer'
     ];
+
+    /**
+     * Get the UMKM that owns this product
+     */
+    public function umkmPreset(): BelongsTo
+    {
+        return $this->belongsTo(UmkmPreset::class);
+    }
 
     /**
      * Get the category that owns the product.

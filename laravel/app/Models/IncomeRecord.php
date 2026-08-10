@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class IncomeRecord extends Model
 {
     protected $fillable = [
+        'umkm_preset_id',
         'transaction_id',
         'amount',
         'date',
@@ -18,6 +19,14 @@ class IncomeRecord extends Model
         'amount' => 'decimal:2',
         'date' => 'date'
     ];
+
+    /**
+     * Get the UMKM that owns this income record
+     */
+    public function umkmPreset(): BelongsTo
+    {
+        return $this->belongsTo(UmkmPreset::class);
+    }
 
     /**
      * Get the transaction that owns the income record.

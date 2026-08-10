@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+ import React, { useState } from 'react';
 import { Truck, Search, CheckCircle2, Package, MapPin, Phone, MessageSquare, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { Transaction, Customer, UMKMPreset } from '../types';
 

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Transaction extends Model
 {
     protected $fillable = [
+        'umkm_preset_id',
         'customer_id',
         'transaction_code',
         'total_amount',
@@ -21,6 +22,14 @@ class Transaction extends Model
     protected $casts = [
         'total_amount' => 'decimal:2'
     ];
+
+    /**
+     * Get the UMKM that owns this transaction
+     */
+    public function umkmPreset(): BelongsTo
+    {
+        return $this->belongsTo(UmkmPreset::class);
+    }
 
     /**
      * Get the customer associated with the transaction.

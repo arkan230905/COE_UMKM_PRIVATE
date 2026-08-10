@@ -5,6 +5,9 @@ use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ExpenseController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\FinancialReportController;
+use App\Http\Controllers\UmkmPresetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -26,26 +29,23 @@ Route::get('/health', function () {
     ]);
 });
 
-// Auth Routes (Implicitly handled by Laravel Breeze / Sanctum)
-Route::group(['middleware' => ['auth:sanctum']], function () {
-    
-    // Core Admin Resources
-    Route::apiResource('categories', CategoryController::class);
-    Route::apiResource('products', ProductController::class);
-    Route::apiResource('expenses', ExpenseController::class);
-    
-    // Transaction Operations
-    Route::get('transactions', [TransactionController::class, 'index']);
-    Route::post('transactions', [TransactionController::class, 'store']);
-    Route::put('transactions/{id}/status', [TransactionController::class, 'updateStatus']);
-    
-    // Financial Reports API
-    Route::get('financial-reports', function() {
-        // Sample controller hook
-        return response()->json([
-            'total_income' => \App\Models\IncomeRecord::sum('amount'),
-            'total_expense' => \App\Models\Expense::sum('amount'),
-            'net_profit' => \App\Models\IncomeRecord::sum('amount') - \App\Models\Expense::sum('amount')
-        ]);
-    });
-});
+// Public API Routes (No Auth Required for Development)
+// Note: Add auth middleware in production
+
+// UMKM Presets Management
+Route::apiResource('umkm-presets', UmkmPresetController::class);
+Route::get('umkm-presets/code/{code}', [UmkmPresetController::class, 'getByCode']);
+
+// Core Admin Resources
+Route::apiResource('categories', CategoryController::class);
+Route::apiResource('products', ProductController::class);
+Route::apiResource('expenses', ExpenseController::class);
+Route::apiResource('customers', CustomerController::class);
+
+// Transaction Operations
+Route::apiResource('transactions', TransactionController::class);
+Route::put('transactions/{id}/status', [TransactionController::class, 'updateStatus']);
+
+// Financial Reports API
+Route::get('financial-reports', [FinancialReportController::class, 'index']);
+Route::get('dashboard-stats', [FinancialReportController::class, 'dashboard']);
