@@ -49,7 +49,7 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getUmkmPresets();
-        const data = response.data || [];
+        const data = response.data as any[] || [];
         
         // Map backend format to frontend format
         return data.map((item: any) => ({
@@ -132,7 +132,7 @@ export class StorageService {
         
         // Map backend format to frontend format
         return {
-          id: data.id,
+          id: String(data.id),
           umkmCode: data.umkm_code,
           businessName: data.business_name,
           industry: data.industry,
@@ -150,10 +150,16 @@ export class StorageService {
         throw error;
       }
     }
-    return this.saveToLocalStorage<UMKMPreset>('umkm_presets', preset);
+    // For localStorage, create temp numeric ID then convert to string
+    const items = this.getFromLocalStorage<UMKMPreset>('umkm_presets');
+    const numericId = items.length > 0 ? Math.max(...items.map(i => parseInt(i.id) || 0)) + 1 : 1;
+    const newItem = { ...preset, id: String(numericId) } as UMKMPreset;
+    items.push(newItem);
+    localStorage.setItem('umkm_presets', JSON.stringify(items));
+    return newItem;
   }
 
-  async updateUmkmPreset(id: number, preset: Partial<UMKMPreset>): Promise<UMKMPreset> {
+  async updateUmkmPreset(id: string, preset: Partial<UMKMPreset>): Promise<UMKMPreset> {
     if (this.useApi) {
       try {
         // Map frontend format to backend format
@@ -170,11 +176,11 @@ export class StorageService {
         if (preset.adminName) backendData.admin_name = preset.adminName;
         if (preset.adminEmail) backendData.admin_email = preset.adminEmail;
         
-        const response = await apiService.updateUmkmPreset(id, backendData);
+        const response = await apiService.updateUmkmPreset(parseInt(id), backendData);
         const data = response.data as any;
         
         return {
-          id: data.id,
+          id: String(data.id),
           umkmCode: data.umkm_code,
           businessName: data.business_name,
           industry: data.industry,
@@ -192,19 +198,27 @@ export class StorageService {
         throw error;
       }
     }
-    return this.updateInLocalStorage<UMKMPreset>('umkm_presets', id, preset);
+    const items = this.getFromLocalStorage<UMKMPreset>('umkm_presets');
+    const index = items.findIndex(item => item.id === id);
+    if (index === -1) throw new Error(`UMKM with id ${id} not found`);
+    
+    items[index] = { ...items[index], ...preset };
+    localStorage.setItem('umkm_presets', JSON.stringify(items));
+    return items[index];
   }
 
-  async deleteUmkmPreset(id: number): Promise<void> {
+  async deleteUmkmPreset(id: string): Promise<void> {
     if (this.useApi) {
       try {
-        await apiService.deleteUmkmPreset(id);
+        await apiService.deleteUmkmPreset(parseInt(id));
       } catch (error) {
         console.error('API Error:', error);
         throw error;
       }
     } else {
-      this.deleteFromLocalStorage('umkm_presets', id);
+      const items = this.getFromLocalStorage<UMKMPreset>('umkm_presets');
+      const filtered = items.filter(item => item.id !== id);
+      localStorage.setItem('umkm_presets', JSON.stringify(filtered));
     }
   }
 
@@ -216,7 +230,7 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getCategories();
-        return response.data || [];
+        return (response.data as Category[]) || [];
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Category>('categories');
@@ -272,7 +286,7 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getProducts();
-        return response.data || [];
+        return (response.data as Product[]) || [];
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Product>('products');
@@ -328,7 +342,7 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getCustomers();
-        return response.data || [];
+        return (response.data as Customer[]) || [];
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Customer>('customers');
@@ -384,7 +398,7 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getTransactions();
-        return response.data || [];
+        return (response.data as Transaction[]) || [];
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Transaction>('transactions');
@@ -427,7 +441,7 @@ export class StorageService {
     if (this.useApi) {
       try {
         const response = await apiService.getExpenses();
-        return response.data || [];
+        return (response.data as Expense[]) || [];
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Expense>('expenses');

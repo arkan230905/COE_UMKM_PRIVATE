@@ -318,14 +318,6 @@ export default function SuperAdminWelcome({
               </div>
             )}
 
-            {/* Database Status Indicator */}
-            {storageService.isUsingApi() && (
-              <div className="mb-4 p-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 dark:border-blue-900 rounded-lg flex items-center gap-2 text-[10px]">
-                <Activity size={12} className="text-blue-500 animate-pulse" />
-                <span className="text-blue-700 dark:text-blue-400 font-bold">Sistem terhubung ke Database MySQL</span>
-              </div>
-            )}
-
             {/* LOGIN PANEL FORM */}
             {activeMode === 'login' ? (
               <form onSubmit={handleLogin} className="space-y-4">
