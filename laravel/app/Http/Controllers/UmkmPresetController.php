@@ -29,14 +29,25 @@ class UmkmPresetController extends Controller
             'business_name' => 'required|string|max:255',
             'industry' => 'required|string|max:255',
             'logo_text' => 'nullable|string|max:10',
-            'primary_color' => 'nullable|string|max:7',
-            'accent_color' => 'nullable|string|max:7',
+            'primary_color' => 'nullable|string|max:20',
+            'accent_color' => 'nullable|string|max:20',
             'currency' => 'nullable|string|max:10',
             'phone' => 'nullable|string|max:20',
             'address' => 'nullable|string',
             'admin_name' => 'required|string|max:255',
             'admin_email' => 'required|email|unique:umkm_presets,admin_email',
             'is_active' => 'boolean',
+        ], [
+            'umkm_code.required' => 'Kode UMKM wajib diisi',
+            'umkm_code.unique' => 'Kode UMKM sudah terdaftar',
+            'business_name.required' => 'Nama usaha wajib diisi',
+            'business_name.max' => 'Nama usaha maksimal 255 karakter',
+            'admin_name.required' => 'Nama admin wajib diisi',
+            'admin_email.required' => 'Email admin wajib diisi',
+            'admin_email.email' => 'Format email tidak valid',
+            'admin_email.unique' => 'Email sudah terdaftar',
+            'primary_color.max' => 'Kode warna primary maksimal 20 karakter',
+            'accent_color.max' => 'Kode warna accent maksimal 20 karakter',
         ]);
 
         $preset = UmkmPreset::create($validated);

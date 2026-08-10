@@ -183,7 +183,7 @@ export default function SuperAdminWelcome({
         industry: defaultIndustry,
         logoText: brandName.trim().substring(0, 3).toUpperCase(),
         primaryColor: defaultBrandColor,
-        accentColor: defaultBrandColor + 'dd',
+        accentColor: '#3B82F6', // Blue accent, proper hex code
         currency: 'Rp',
         phone: phone || '0812-9988-1122',
         address: address || 'Alamat Utama UMKM Terdaftar',
@@ -220,8 +220,28 @@ export default function SuperAdminWelcome({
       }, 4500);
     } catch (error: any) {
       console.error('Registration error:', error);
-      const errorMessage = error?.message || 'Gagal mendaftar UMKM. Silakan coba lagi.';
-      setErrorMsg(`Error: ${errorMessage}`);
+      
+      // Extract error message in Indonesian
+      let errorMessage = 'Gagal mendaftar UMKM. Silakan coba lagi.';
+      
+      if (error?.message) {
+        // If error message is in English, translate to Indonesian
+        const msg = error.message;
+        if (msg.includes('accent color field must not be greater')) {
+          errorMessage = 'Kode warna accent terlalu panjang (maksimal 20 karakter)';
+        } else if (msg.includes('primary color field must not be greater')) {
+          errorMessage = 'Kode warna primary terlalu panjang (maksimal 20 karakter)';
+        } else if (msg.includes('email has already been taken')) {
+          errorMessage = 'Email sudah terdaftar. Gunakan email lain.';
+        } else if (msg.includes('umkm_code has already been taken')) {
+          errorMessage = 'Kode UMKM sudah terdaftar.';
+        } else {
+          // Use the original message if it's already in Indonesian
+          errorMessage = msg;
+        }
+      }
+      
+      setErrorMsg(errorMessage);
       setIsLoading(false);
     }
   };
