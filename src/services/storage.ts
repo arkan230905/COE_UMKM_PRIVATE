@@ -111,6 +111,8 @@ export class StorageService {
   async saveUmkmPreset(preset: Omit<UMKMPreset, 'id'>): Promise<UMKMPreset> {
     if (this.useApi) {
       try {
+        console.log('📤 Sending UMKM registration to API:', preset);
+        
         // Map frontend format to backend format
         const backendData = {
           umkm_code: preset.umkmCode,
@@ -127,11 +129,16 @@ export class StorageService {
           is_active: true,
         };
         
+        console.log('📤 Backend format:', backendData);
+        
         const response = await apiService.createUmkmPreset(backendData);
+        
+        console.log('✅ API Response:', response);
+        
         const data = response.data as any;
         
         // Map backend format to frontend format
-        return {
+        const savedPreset = {
           id: String(data.id),
           umkmCode: data.umkm_code,
           businessName: data.business_name,
@@ -145,9 +152,14 @@ export class StorageService {
           adminName: data.admin_name,
           adminEmail: data.admin_email,
         };
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+        
+        console.log('✅ Saved UMKM preset:', savedPreset);
+        
+        return savedPreset;
+      } catch (error: any) {
+        console.error('❌ API Error details:', error);
+        console.error('❌ Error response:', error?.response);
+        throw new Error(error?.response?.data?.message || error?.message || 'Failed to save UMKM');
       }
     }
     // For localStorage, create temp numeric ID then convert to string

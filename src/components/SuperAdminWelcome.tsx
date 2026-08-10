@@ -218,9 +218,10 @@ export default function SuperAdminWelcome({
         setRole('super_admin');
         setIsSuperAdminLoggedIn(true);
       }, 4500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Registration error:', error);
-      setErrorMsg('Gagal mendaftar UMKM. Silakan coba lagi.');
+      const errorMessage = error?.message || 'Gagal mendaftar UMKM. Silakan coba lagi.';
+      setErrorMsg(`Error: ${errorMessage}`);
       setIsLoading(false);
     }
   };
