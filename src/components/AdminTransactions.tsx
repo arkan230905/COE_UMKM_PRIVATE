@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { ListOrdered, Search, Edit3, Eye, FileText, CheckCircle2, Clock, XCircle, User, MessageSquare, ShieldAlert, ArrowRight, Plus, ShoppingCart, Barcode, Trash2, X, CheckCircle } from 'lucide-react';
 import { Transaction, Customer, UMKMPreset, TransactionStatus, Product } from '../types';
+import storageService from '../services/storage';
 
 interface AdminTransactionsProps {
   transactions: Transaction[];
   setTransactions: React.Dispatch<React.SetStateAction<Transaction[]>>;
   customers: Customer[];
   products: Product[];
+  setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   currentPreset: UMKMPreset;
 }
 
@@ -15,6 +17,7 @@ export default function AdminTransactions({
   setTransactions,
   customers,
   products,
+  setProducts,
   currentPreset
 }: AdminTransactionsProps) {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,24 +49,54 @@ export default function AdminTransactions({
     }
   }, [selectedTx]);
 
+  // Log products when kasir modal opens
+  React.useEffect(() => {
+    if (showKasirModal) {
+      console.log('🏪 Kasir Modal Opened');
+      console.log('📦 Total products:', products.length);
+      console.log('📦 Products with barcode:', products.filter(p => p.barcode).length);
+      console.log('📦 Active products:', products.filter(p => p.isActive).length);
+      console.log('📦 Sample products:', products.slice(0, 5).map(p => ({
+        id: p.id,
+        name: p.name,
+        barcode: p.barcode,
+        isActive: p.isActive,
+        stock: p.stock
+      })));
+    }
+  }, [showKasirModal, products]);
+
   // Kasir Functions
   const handleBarcodeSearch = (barcode: string) => {
-    const product = products.find(p => p.barcode === barcode && p.isActive);
+    console.log('🔍 Searching for barcode:', barcode);
+    console.log('📦 Total products available:', products.length);
+    console.log('📦 Sample products with barcodes:', products.filter(p => p.barcode).slice(0, 3).map(p => ({ id: p.id, name: p.name, barcode: p.barcode })));
+    
+    const product = products.find(p => p.barcode && p.barcode.trim() === barcode.trim() && p.isActive);
     if (product) {
+      console.log('✅ Product found:', product.name, 'Barcode:', product.barcode);
       addToCart(product);
       setBarcodeInput('');
       setProductSearchInput('');
+    } else {
+      console.log('❌ Product NOT found for barcode:', barcode);
+      alert(`Produk dengan barcode "${barcode}" tidak ditemukan atau tidak aktif.`);
     }
   };
 
   const handleProductNameSearch = (searchName: string) => {
+    console.log('🔍 Searching for product name:', searchName);
     const product = products.find(p => 
       p.name.toLowerCase().includes(searchName.toLowerCase()) && p.isActive
     );
     if (product) {
+      console.log('✅ Product found:', product.name);
       addToCart(product);
       setBarcodeInput('');
       setProductSearchInput('');
+    } else {
+      console.log('❌ Product NOT found for name:', searchName);
+      alert(`Produk dengan nama "${searchName}" tidak ditemukan atau tidak aktif.`);
     }
   };
 
@@ -121,7 +154,7 @@ export default function AdminTransactions({
     return cartItems.reduce((sum, item) => sum + (item.product.price * item.quantity), 0);
   };
 
-  const handleProcessOfflineTransaction = () => {
+  const handleProcessOfflineTransaction = async () => {
     if (cartItems.length === 0) {
       alert('Keranjang kosong! Tambahkan produk terlebih dahulu.');
       return;
@@ -130,10 +163,9 @@ export default function AdminTransactions({
     // Generate transaction code
     const txCode = `TRX${Date.now().toString().slice(-8)}`;
     
-    const newTransaction: Transaction = {
-      id: transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 1,
+    const newTransactionData = {
       umkmPresetId: currentPreset.id, // Link to current UMKM for data isolation
-      customerId: 0, // Pelanggan toko/walk-in
+      customerId: 390, // Pelanggan toko/walk-in (hardcoded walk-in customer ID)
       transactionCode: txCode,
       totalAmount: calculateTotal(),
       status: 'completed', // Offline transaction langsung selesai
@@ -151,17 +183,34 @@ export default function AdminTransactions({
       }))
     };
 
-    // Update transactions
-    setTransactions(prev => [newTransaction, ...prev]);
+    try {
+      console.log('💾 Saving offline transaction to database...', newTransactionData);
+      
+      // ✅ SAVE TO DATABASE
+      const savedTransaction = await storageService.saveTransaction(newTransactionData);
+      
+      console.log('✅ Offline transaction saved to database:', savedTransaction);
+      
+      // ✅ RELOAD PRODUCTS FROM DATABASE (to get updated stock)
+      const updatedProducts = await storageService.getProducts();
+      setProducts(updatedProducts);
+      console.log('✅ Products reloaded from database with updated stock');
+      
+      // Update local state with saved transaction
+      setTransactions(prev => [savedTransaction, ...prev]);
 
-    // Clear kasir
-    setCartItems([]);
-    setKasirNotes('');
-    setBarcodeInput('');
-    setProductSearchInput('');
-    setShowKasirModal(false);
+      // Clear kasir
+      setCartItems([]);
+      setKasirNotes('');
+      setBarcodeInput('');
+      setProductSearchInput('');
+      setShowKasirModal(false);
 
-    alert(`Transaksi berhasil! Kode: ${txCode}`);
+      alert(`✅ Transaksi berhasil disimpan ke database! Kode: ${txCode}`);
+    } catch (error: any) {
+      console.error('❌ Error saving offline transaction:', error);
+      alert('❌ Gagal menyimpan transaksi: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const resetKasir = () => {

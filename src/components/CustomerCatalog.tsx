@@ -3,6 +3,7 @@ import { ShoppingCart, Search, Filter, Plus, Minus, X, CheckSquare, Sparkles, Me
 import { Product, Category, CartItem, PaymentMethod, Customer, Transaction, UMKMPreset, TransactionStatus } from '../types';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import storageService from '../services/storage';
 
 interface CustomerCatalogProps {
   products: Product[];
@@ -154,7 +155,7 @@ export default function CustomerCatalog({
     return needsShipping;
   };
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
@@ -191,11 +192,10 @@ export default function CustomerCatalog({
     console.log('Booking date:', bookingDate);
     console.log('=====================');
 
-    // Create a new transition entry
-    const newTx: Transaction = {
-      id: transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 301,
+    // Create a new transaction data
+    const newTransactionData = {
       umkmPresetId: currentPreset.id, // Link to current UMKM for data isolation
-      customerId: currentUser ? currentUser.id : 101, // linked to customer ID log
+      customerId: currentUser ? currentUser.id : 390, // linked to customer ID or walk-in
       transactionCode: randCode,
       totalAmount: totalCartAmount,
       status: paymentMethod === 'Cash' ? 'pending' : 'paid', // Cash starts pending, others paid
@@ -212,24 +212,33 @@ export default function CustomerCatalog({
       items: itemsSnapshot
     };
 
-    // Update product stock limits after successful purchase
-    setProducts(prev => {
-      return prev.map(p => {
-        const cartItem = cart.find(item => item.product.id === p.id);
-        if (cartItem) {
-          return { ...p, stock: Math.max(0, p.stock - cartItem.quantity) };
-        }
-        return p;
-      });
-    });
-
-    setTransactions(prev => [newTx, ...prev]);
-    setCompletedTransaction(newTx);
-    setCompletedCartItems([...cart]); // Save cart items before clearing
-    setCart([]);
-    setCheckoutCompletedCode(randCode);
-    setBookingDate('');
-    setIsOpenCheckout(false);
+    try {
+      console.log('💾 Saving online transaction to database...', newTransactionData);
+      
+      // ✅ SAVE TO DATABASE
+      const savedTransaction = await storageService.saveTransaction(newTransactionData);
+      
+      console.log('✅ Online transaction saved to database:', savedTransaction);
+      
+      // ✅ RELOAD PRODUCTS FROM DATABASE (to get updated stock)
+      const updatedProducts = await storageService.getProducts();
+      setProducts(updatedProducts);
+      console.log('✅ Products reloaded from database with updated stock');
+      
+      // Update local state
+      setTransactions(prev => [savedTransaction, ...prev]);
+      setCompletedTransaction(savedTransaction);
+      setCompletedCartItems([...cart]); // Save cart items before clearing
+      setCart([]);
+      setCheckoutCompletedCode(randCode);
+      setBookingDate('');
+      setIsOpenCheckout(false);
+      
+      alert('✅ Pesanan berhasil disimpan ke database!');
+    } catch (error: any) {
+      console.error('❌ Error saving online transaction:', error);
+      alert('❌ Gagal menyimpan pesanan: ' + (error.message || 'Unknown error'));
+    }
   };
 
   // Print Invoice Function

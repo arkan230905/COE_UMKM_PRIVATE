@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, ShoppingCart, CreditCard, User, LogOut, CheckCircle, Flame, Sparkles, Receipt, Trash } from 'lucide-react';
 import { Product, Customer, Transaction, TransactionItem, UMKMPreset } from '../types';
+import storageService from '../services/storage';
 
 interface CashierPOSProps {
   products: Product[];
@@ -51,6 +52,10 @@ export default function CashierPOS({
     e.preventDefault();
     if (!barcodeSearch.trim()) return;
 
+    console.log('🔍 Searching for barcode:', barcodeSearch.trim());
+    console.log('📦 Total products available:', products.length);
+    console.log('📦 Sample barcodes:', products.slice(0, 3).map(p => ({ id: p.id, name: p.name, barcode: p.barcode })));
+
     // Search by barcode OR by product ID as short code
     const foundProduct = products.find(
       p => 
@@ -59,6 +64,7 @@ export default function CashierPOS({
     );
 
     if (foundProduct) {
+      console.log('✅ Product found:', foundProduct.name, 'Barcode:', foundProduct.barcode);
       if (foundProduct.stock <= 0) {
         alert(`Maaf, stok ${foundProduct.name} habis.`);
         setBarcodeSearch('');
@@ -67,6 +73,7 @@ export default function CashierPOS({
       addItemToPOS(foundProduct);
       setBarcodeSearch('');
     } else {
+      console.log('❌ Product NOT found for barcode:', barcodeSearch.trim());
       alert(`Produk dengan Barcode/ID "${barcodeSearch}" tidak ditemukan.`);
       setBarcodeSearch('');
     }
@@ -128,7 +135,7 @@ export default function CashierPOS({
     (p.barcode && p.barcode.includes(manualQuery))
   );
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedItems.length === 0) {
       alert('Keranjang POS masih kosong.');
@@ -140,11 +147,10 @@ export default function CashierPOS({
       return;
     }
 
-    const newTrxId = Date.now();
     const cleanCustomer = selectedCustomerId !== 'guest' ? Number(selectedCustomerId) : 390; // Fallback to walk-in customer
 
-    const newTransaction: Transaction = {
-      id: newTrxId,
+    const newTransactionData = {
+      umkmPresetId: currentPreset.id, // Link to current UMKM for data isolation
       customerId: cleanCustomer,
       transactionCode: `POS${Math.floor(100 + Math.random() * 900)}${Date.now().toString().slice(-4)}`,
       totalAmount: totalAmount,
@@ -163,22 +169,30 @@ export default function CashierPOS({
       }))
     };
 
-    // Deduct stock in parent state
-    setProducts(prevProds =>
-      prevProds.map(p => {
-        const itemInCart = selectedItems.find(item => item.product.id === p.id);
-        if (itemInCart) {
-          return { ...p, stock: Math.max(0, p.stock - itemInCart.quantity) };
-        }
-        return p;
-      })
-    );
+    try {
+      console.log('💾 Saving transaction to database...', newTransactionData);
+      
+      // ✅ SAVE TO DATABASE
+      const savedTransaction = await storageService.saveTransaction(newTransactionData);
+      
+      console.log('✅ Transaction saved to database:', savedTransaction);
+      
+      // ✅ RELOAD PRODUCTS FROM DATABASE (to get updated stock)
+      const updatedProducts = await storageService.getProducts();
+      setProducts(updatedProducts);
+      console.log('✅ Products reloaded from database with updated stock');
+      
+      // Update local state with saved transaction
+      setTransactions(prev => [savedTransaction, ...prev]);
 
-    // Append to transactions list
-    setTransactions(prev => [newTransaction, ...prev]);
-
-    // Show receipt dialog
-    setSuccessReceipt(newTransaction);
+      // Show receipt dialog
+      setSuccessReceipt(savedTransaction);
+      
+      alert('✅ Transaksi berhasil disimpan ke database!');
+    } catch (error: any) {
+      console.error('❌ Error saving transaction:', error);
+      alert('❌ Gagal menyimpan transaksi: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const resetPOS = () => {

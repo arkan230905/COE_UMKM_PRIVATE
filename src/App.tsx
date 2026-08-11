@@ -41,8 +41,11 @@ export default function App() {
   });
 
   useEffect(() => {
-    localStorage.setItem('is_super_admin_logged_in', String(isSuperAdminLoggedIn));
-  }, [isSuperAdminLoggedIn]);
+    // Only save admin login state, not customer auto-login
+    if (role !== 'customer') {
+      localStorage.setItem('is_super_admin_logged_in', String(isSuperAdminLoggedIn));
+    }
+  }, [isSuperAdminLoggedIn, role]);
 
   // Preferences states - Load dark mode from localStorage
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -58,7 +61,21 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   const [currentPreset, setCurrentPreset] = useState<UMKMPreset>(() => {
-    // Don't auto-select any preset - use default placeholder for UI rendering
+    // Try to restore from localStorage on page load/refresh
+    const storedPresetId = localStorage.getItem('current_umkm_preset_id');
+    const storedPresetData = localStorage.getItem('current_umkm_preset');
+    
+    if (storedPresetData && storedPresetId) {
+      try {
+        const parsed = JSON.parse(storedPresetData);
+        console.log('🔄 Restored UMKM session from localStorage:', parsed.businessName);
+        return parsed;
+      } catch (e) {
+        console.error('Error parsing stored preset:', e);
+      }
+    }
+    
+    // Default placeholder if no session
     return {
       id: 'placeholder',
       umkmCode: 'PLACEHOLDER',
@@ -74,6 +91,15 @@ export default function App() {
       adminEmail: 'admin@umkm.com',
     };
   });
+
+  // Save currentPreset to localStorage whenever it changes (only for admin/kasir, not customer)
+  useEffect(() => {
+    if (currentPreset.id !== 'placeholder' && role !== 'customer') {
+      localStorage.setItem('current_umkm_preset_id', currentPreset.id);
+      localStorage.setItem('current_umkm_preset', JSON.stringify(currentPreset));
+      console.log('💾 Saved UMKM session to localStorage:', currentPreset.businessName);
+    }
+  }, [currentPreset, role]);
 
   // App Master Database structures - ALL FROM DATABASE!
   const [categories, setCategories] = useState<Category[]>([]);
@@ -93,12 +119,16 @@ export default function App() {
     loadAllDataFromDatabase();
   }, []);
 
-  // Load data when currentPreset changes
+  // Load data when currentPreset changes (for both admin and customer)
   useEffect(() => {
-    if (currentPreset.id !== 'placeholder' && isSuperAdminLoggedIn) {
+    if (currentPreset.id !== 'placeholder') {
+      // Set current UMKM ID for data isolation
+      storageService.setCurrentUmkmId(currentPreset.id);
+      console.log('🔐 Data isolation enabled for UMKM:', currentPreset.businessName, 'ID:', currentPreset.id);
+      
       loadPresetDataFromDatabase();
     }
-  }, [currentPreset.id, isSuperAdminLoggedIn]);
+  }, [currentPreset.id]);
 
   const loadAllDataFromDatabase = async () => {
     try {
@@ -182,10 +212,19 @@ export default function App() {
   useEffect(() => {
     const parseUrl = () => {
       const path = window.location.pathname;
+      
+      // Welcome page handling
       if (path === '/welcome') {
         setIsSuperAdminLoggedIn(false);
         return;
       }
+      
+      // Wait for allPresets to load from database
+      if (allPresets.length === 0) {
+        console.log('⏳ Waiting for UMKM presets to load...');
+        return;
+      }
+      
       const adminMatch = path.match(/^\/admin\/([^/]+)\/([^/]+)/i);
       const customerMatch = path.match(/^\/([^/]+)\/pelanggan\/(cattalog|catalog|order-history|riwayat-pesanan)/i);
       const kasirMatch = path.match(/^\/kasir\/([^/]+)/i);
@@ -199,23 +238,42 @@ export default function App() {
         const tab = adminMatch[2];
         matchedRole = 'super_admin';
         matchedTab = tab === 'pantau-cattlog' ? 'pantau-catalog' : tab;
-        matchedPreset = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug) || null;
+        matchedPreset = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug.toUpperCase()) || null;
       } else if (customerMatch) {
         const slug = customerMatch[1];
         const tab = customerMatch[2];
         matchedRole = 'customer';
         matchedTab = (tab === 'cattalog' || tab === 'catalog') ? 'catalog' : 'order-history';
-        matchedPreset = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug) || null;
+        matchedPreset = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug.toUpperCase()) || null;
+        
+        // Auto-enable customer view without admin login
+        if (matchedPreset) {
+          console.log('🛍️ Customer access detected for:', matchedPreset.businessName);
+          console.log('🔒 Setting role to CUSTOMER to prevent admin redirect');
+          
+          // CRITICAL: These must be called in sequence
+          // to prevent race conditions
+          setCurrentPreset(matchedPreset);
+          setRole('customer'); // This will trigger useEffect with role='customer'
+          setActiveTab(matchedTab);
+          setIsSuperAdminLoggedIn(true); // Enable access
+          
+          // Don't call setRole again at the end - already done here
+          return;
+        }
       } else if (kasirMatch) {
         const slug = kasirMatch[1];
         matchedRole = 'kasir';
-        matchedPreset = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug) || null;
+        matchedPreset = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug.toUpperCase()) || null;
       }
       
       if (matchedPreset) {
+        console.log('✅ Matched UMKM from URL:', matchedPreset.businessName, 'Role:', matchedRole);
         setCurrentPreset(matchedPreset);
-        setRole(matchedRole);
+        setRole(matchedRole); // Set role from matched route
         setActiveTab(matchedTab);
+      } else if (customerMatch || adminMatch || kasirMatch) {
+        console.error('❌ UMKM not found in database. Available UMKMs:', allPresets.map(p => p.businessName));
       }
     };
 
@@ -225,25 +283,49 @@ export default function App() {
   }, [allPresets]);
 
   useEffect(() => {
+    // CRITICAL: Check URL first before any logic
+    const currentPath = window.location.pathname;
+    const isCustomerURL = currentPath.includes('/pelanggan/');
+    
+    console.log('🔍 URL Push Check:', {
+      currentPath,
+      isCustomerURL,
+      role,
+      isSuperAdminLoggedIn,
+      currentPresetId: currentPreset.id
+    });
+    
+    // If user is on customer URL, NEVER redirect them!
+    if (isCustomerURL) {
+      console.log('🛑 STOP! User is on customer URL - NO REDIRECT ALLOWED!');
+      return; // Absolute stop, don't touch URL
+    }
+    
+    // Don't redirect if not logged in (except customer already handled above)
     if (!isSuperAdminLoggedIn) {
       if (window.location.pathname !== '/welcome') {
         window.history.pushState(null, '', '/welcome');
       }
       return;
     }
+    
+    // Skip URL push if currentPreset is placeholder
+    if (currentPreset.id === 'placeholder') {
+      return;
+    }
+    
     const slug = currentPreset.businessName.trim().toUpperCase().replace(/\s+/g, '-');
     let path = '';
+    
     if (role === 'kasir') {
       path = `/kasir/${slug}`;
     } else if (role === 'super_admin') {
       const displayTab = activeTab === 'pantau-catalog' ? 'pantau-cattlog' : activeTab;
       path = `/admin/${slug}/${displayTab}`;
-    } else {
-      const displayTab = activeTab === 'order-history' ? 'order-history' : 'cattalog';
-      path = `/${slug}/pelanggan/${displayTab}`;
     }
     
-    if (window.location.pathname !== path) {
+    if (path && window.location.pathname !== path) {
+      console.log('🔄 Admin/Kasir URL update:', path);
       window.history.pushState(null, '', path);
     }
   }, [role, currentPreset, activeTab, isSuperAdminLoggedIn]);
@@ -488,6 +570,7 @@ export default function App() {
             setTransactions={setTransactions}
             customers={allCustomers}
             products={products}
+            setProducts={setProducts}
             currentPreset={currentPreset}
           />
         );
@@ -603,7 +686,8 @@ export default function App() {
   }, [isDarkMode]);
 
   // Standalone welcome page gate for admin & cashier before logging in
-  if (!isSuperAdminLoggedIn) {
+  // BUT allow customer direct access without login
+  if (!isSuperAdminLoggedIn && role !== 'customer') {
     return (
       <div className={isDarkMode ? 'dark' : ''}>
         <div className="min-h-screen bg-bento-bg dark:bg-slate-950 flex flex-col justify-center items-center p-4 sm:p-8 transition-colors duration-300">
@@ -634,8 +718,30 @@ export default function App() {
           customers={allCustomers}
           currentPreset={currentPreset}
           onLogout={() => {
+            // Clear session on logout from kasir
+            localStorage.removeItem('current_umkm_preset_id');
+            localStorage.removeItem('current_umkm_preset');
+            localStorage.removeItem('is_super_admin_logged_in');
+            console.log('🚪 Logout Kasir - Session cleared');
+            
             setRole('super_admin');
             setIsSuperAdminLoggedIn(false);
+            
+            // Reset to placeholder preset
+            setCurrentPreset({
+              id: 'placeholder',
+              umkmCode: 'PLACEHOLDER',
+              businessName: 'Sistem UMKM Pintar',
+              industry: 'Multi-Tenant',
+              logoText: 'UMKM',
+              primaryColor: '#4f46e5',
+              accentColor: '#818cf8',
+              currency: 'Rp',
+              phone: '0000-0000-0000',
+              address: 'Default Address',
+              adminName: 'Admin',
+              adminEmail: 'admin@umkm.com',
+            });
           }}
         />
       </div>
@@ -660,7 +766,32 @@ export default function App() {
             role={role}
             setRole={setRole}
             isSuperAdminLoggedIn={isSuperAdminLoggedIn}
-            onLogoutAdmin={() => setIsSuperAdminLoggedIn(false)}
+            onLogoutAdmin={() => {
+              // Clear session data
+              localStorage.removeItem('current_umkm_preset_id');
+              localStorage.removeItem('current_umkm_preset');
+              localStorage.removeItem('is_super_admin_logged_in');
+              console.log('🚪 Logout - Session cleared');
+              
+              // Reset to logged out state
+              setIsSuperAdminLoggedIn(false);
+              
+              // Reset to placeholder preset
+              setCurrentPreset({
+                id: 'placeholder',
+                umkmCode: 'PLACEHOLDER',
+                businessName: 'Sistem UMKM Pintar',
+                industry: 'Multi-Tenant',
+                logoText: 'UMKM',
+                primaryColor: '#4f46e5',
+                accentColor: '#818cf8',
+                currency: 'Rp',
+                phone: '0000-0000-0000',
+                address: 'Default Address',
+                adminName: 'Admin',
+                adminEmail: 'admin@umkm.com',
+              });
+            }}
             onLogoutCustomer={() => {
               setCurrentUser(null);
               setActiveTab('catalog');
