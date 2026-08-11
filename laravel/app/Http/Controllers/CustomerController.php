@@ -9,10 +9,19 @@ class CustomerController extends Controller
 {
     /**
      * Display a listing of the customers.
+     * Can filter by umkm_preset_id if provided in query parameter.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $customers = Customer::with('user')->orderBy('created_at', 'desc')->get();
+        $query = Customer::with('user');
+        
+        // Filter by umkm_preset_id if provided
+        if ($request->has('umkm_preset_id')) {
+            $query->where('umkm_preset_id', $request->input('umkm_preset_id'));
+        }
+        
+        $customers = $query->orderBy('created_at', 'desc')->get();
+        
         return response()->json([
             'status' => 'success',
             'data' => $customers
@@ -25,6 +34,7 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'umkm_preset_id' => 'required|integer|exists:umkm_presets,id', // Changed from umkmPresetId
             'user_id' => 'nullable|exists:users,id',
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',

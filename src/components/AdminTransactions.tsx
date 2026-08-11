@@ -132,6 +132,7 @@ export default function AdminTransactions({
     
     const newTransaction: Transaction = {
       id: transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 1,
+      umkmPresetId: currentPreset.id, // Link to current UMKM for data isolation
       customerId: 0, // Pelanggan toko/walk-in
       transactionCode: txCode,
       totalAmount: calculateTotal(),
@@ -205,7 +206,7 @@ export default function AdminTransactions({
 
   const formatCurrency = (amount: number) => {
     if (currentPreset.currency === '$') {
-      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };

@@ -10,10 +10,19 @@ class CategoryController extends Controller
 {
     /**
      * Display a listing of the categories.
+     * Can filter by umkm_preset_id if provided in query parameter.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $categories = Category::orderBy('created_at', 'desc')->get();
+        $query = Category::query();
+        
+        // Filter by umkm_preset_id if provided
+        if ($request->has('umkm_preset_id')) {
+            $query->where('umkm_preset_id', $request->input('umkm_preset_id'));
+        }
+        
+        $categories = $query->orderBy('created_at', 'desc')->get();
+        
         return response()->json([
             'status' => 'success',
             'data' => $categories
@@ -26,13 +35,20 @@ class CategoryController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'umkm_preset_id' => 'required|exists:umkm_presets,id', // Validate UMKM ID (snake_case from frontend)
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
         ]);
 
-        $validated['slug'] = Str::slug($validated['name']) . '-' . time();
+        // Map validated data to database column names
+        $data = [
+            'umkm_preset_id' => $validated['umkm_preset_id'],
+            'name' => $validated['name'],
+            'description' => $validated['description'] ?? null,
+            'slug' => Str::slug($validated['name']) . '-' . time(),
+        ];
 
-        $category = Category::create($validated);
+        $category = Category::create($data);
 
         return response()->json([
             'status' => 'success',

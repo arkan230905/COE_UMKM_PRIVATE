@@ -18,7 +18,7 @@ export default function AdminCustomers({
 
   const formatCurrency = (amount: number) => {
     if (currentPreset.currency === '$') {
-      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit2, Trash2, Receipt, AlertCircle, X, DollarSign } from 'lucide-react';
 import { Expense, UMKMPreset } from '../types';
+import storageService from '../services/storage';
 
 interface AdminExpensesProps {
   expenses: Expense[];
@@ -39,7 +40,7 @@ export default function AdminExpenses({
 
   const formatCurrency = (val: number) => {
     if (currentPreset.currency === '$') {
-      return `$${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `$${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
     return `Rp ${val.toLocaleString('id-ID')}`;
   };
@@ -138,13 +139,20 @@ export default function AdminExpenses({
     setIsOpenModal(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm('Apakah Anda yakin ingin menghapus data pengeluaran ini?')) {
-      setExpenses(prev => prev.filter(e => e.id !== id));
+      try {
+        await storageService.deleteExpense(id);
+        setExpenses(prev => prev.filter(e => e.id !== id));
+        console.log('✅ Expense deleted from database:', id);
+      } catch (err: any) {
+        console.error('❌ Error deleting expense:', err);
+        alert('Gagal menghapus pengeluaran: ' + (err.message || 'Unknown error'));
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -158,55 +166,70 @@ export default function AdminExpenses({
       if (amount <= 0) return setError('Nominal pengeluaran harus lebih dari 0.');
     }
 
-    if (editingExpense) {
-      // Edit
-      setExpenses(prev =>
-        prev.map(e =>
-          e.id === editingExpense.id
-            ? { 
-                ...e, 
-                expenseCategory, 
-                description, 
-                amount, 
-                date, 
-                notes,
-                ...(expenseCategory === 'Pembelian Stok' && {
-                  materialName,
-                  quantity,
-                  unit,
-                  pricePerUnit,
-                  shippingCost,
-                  discount,
-                  ppnPercent
-                })
-              }
-            : e
-        )
-      );
-    } else {
-      // Create
-      const newExp: Expense = {
-        id: expenses.length > 0 ? Math.max(...expenses.map(e => e.id)) + 1 : 1,
-        expenseCategory,
-        description,
-        amount,
-        date,
-        notes,
-        createdAt: new Date().toISOString(),
-        ...(expenseCategory === 'Pembelian Stok' && {
-          materialName,
-          quantity,
-          unit,
-          pricePerUnit,
-          shippingCost,
-          discount,
-          ppnPercent
-        })
-      };
-      setExpenses(prev => [newExp, ...prev]);
-    }
+    try {
+      if (editingExpense) {
+        // Update - Save to database via API
+        const updatedData = {
+          expenseCategory,
+          description,
+          amount,
+          date,
+          notes,
+          ...(expenseCategory === 'Pembelian Stok' && {
+            materialName,
+            quantity,
+            unit,
+            pricePerUnit,
+            shippingCost,
+            discount,
+            ppnPercent
+          })
+        };
 
-    setIsOpenModal(false);
+        const updatedExpense = await storageService.updateExpense(editingExpense.id, updatedData);
+
+        // Update local state
+        setExpenses(prev =>
+          prev.map(e =>
+            e.id === editingExpense.id ? updatedExpense : e
+          )
+        );
+
+        console.log('✅ Expense updated in database:', updatedExpense);
+      } else {
+        // Create - Save to database via API
+        const newExpData = {
+          umkmPresetId: currentPreset.id, // Link to current UMKM
+          expenseCategory,
+          description,
+          amount,
+          date,
+          notes,
+          createdAt: new Date().toISOString(),
+          ...(expenseCategory === 'Pembelian Stok' && {
+            materialName,
+            quantity,
+            unit,
+            pricePerUnit,
+            shippingCost,
+            discount,
+            ppnPercent
+          })
+        };
+
+        const savedExpense = await storageService.saveExpense(newExpData);
+
+        // Add to local state
+        setExpenses(prev => [savedExpense, ...prev]);
+
+        console.log('✅ Expense saved to database:', savedExpense);
+      }
+
+      setIsOpenModal(false);
+    } catch (err: any) {
+      console.error('❌ Error saving expense:', err);
+      setError('Gagal menyimpan pengeluaran: ' + (err.message || 'Cek koneksi database'));
+    }
   };
 
   // Filter listings

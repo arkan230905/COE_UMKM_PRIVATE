@@ -26,7 +26,7 @@ export default function AdminShipping({
 
   const formatCurrency = (val: number) => {
     if (currentPreset.currency === '$') {
-      return `$${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `$${val.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
     return `Rp ${val.toLocaleString('id-ID')}`;
   };

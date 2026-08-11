@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Search, Edit2, Trash2, ShoppingBag, Eye, EyeOff, AlertCircle, X, DollarSign, Filter, Upload, Image as ImageIcon } from 'lucide-react';
 import { Product, Category, UMKMPreset } from '../types';
 import JsBarcode from 'jsbarcode';
+import storageService from '../services/storage';
 
 // Barcode Image Component
 const BarcodeImage = ({ value }: { value: string }) => {
@@ -156,13 +157,20 @@ export default function AdminProducts({
     setIsOpenModal(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm('Apakah Anda yakin ingin menghapus produk ini? Tindakan ini tidak dapat dibatalkan.')) {
-      setProducts(prev => prev.filter(p => p.id !== id));
+      try {
+        await storageService.deleteProduct(id);
+        setProducts(prev => prev.filter(p => p.id !== id));
+        console.log('✅ Product deleted from database:', id);
+      } catch (err: any) {
+        console.error('❌ Error deleting product:', err);
+        alert('Gagal menghapus produk: ' + (err.message || 'Unknown error'));
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
@@ -171,6 +179,17 @@ export default function AdminProducts({
     console.log('Category ID:', categoryId);
     console.log('Price:', price);
     console.log('Stock:', stock);
+    console.log('Current Preset:', currentPreset);
+    console.log('Current Preset ID:', currentPreset.id);
+    console.log('Is Placeholder?', currentPreset.id === 'placeholder');
+
+    // Validate UMKM is selected
+    if (!currentPreset || currentPreset.id === 'placeholder') {
+      const msg = '⚠️ UMKM belum dipilih!\n\nAnda harus login sebagai admin UMKM terlebih dahulu untuk menambah produk.';
+      setError(msg);
+      alert(msg);
+      return;
+    }
 
     if (!name.trim()) return setError('Nama produk wajib diisi.');
     if (categoryId === 0) return setError('Pilihlah salah satu kategori.');
@@ -185,22 +204,40 @@ export default function AdminProducts({
 
     try {
       if (editingProduct) {
-        // Edit Update
-        console.log('Updating product:', editingProduct.id);
+        // Edit Update - Save to database via API
+        const updatedData = {
+          name,
+          slug: generatedSlug,
+          categoryId,
+          description,
+          price,
+          stock,
+          image: imageFile,
+          isActive,
+          barcode: editingProduct.barcode
+        };
+        
+        const updatedProduct = await storageService.updateProduct(editingProduct.id, updatedData);
+        
+        // Update local state
         setProducts(prev =>
           prev.map(p =>
-            p.id === editingProduct.id
-              ? { ...p, name, slug: generatedSlug, categoryId, description, price, stock, image: imageFile, isActive, barcode: p.barcode || editingProduct.barcode }
-              : p
+            p.id === editingProduct.id ? updatedProduct : p
           )
         );
-      } else {
-        // Create Insert
-        const generatedBarcode = generateBarcode();
-        console.log('Generated barcode for new product:', generatedBarcode);
         
-        const newProd: Product = {
-          id: products.length > 0 ? Math.max(...products.map(p => p.id)) + 1 : 101,
+        console.log('✅ Product updated in database:', updatedProduct);
+      } else {
+        // Create Insert - Save to database via API
+        const generatedBarcode = generateBarcode();
+        console.log('=== DEBUG PRODUCT SAVE ===');
+        console.log('Current Preset:', currentPreset);
+        console.log('Current Preset ID:', currentPreset.id);
+        console.log('Category ID:', categoryId);
+        console.log('Generated barcode:', generatedBarcode);
+        
+        const newProdData = {
+          umkmPresetId: currentPreset.id, // Link to current UMKM
           categoryId,
           name,
           slug: generatedSlug,
@@ -210,29 +247,56 @@ export default function AdminProducts({
           image: imageFile,
           isActive,
           createdAt: new Date().toISOString().substring(0, 10),
-          barcode: generatedBarcode, // Auto-generate barcode
+          barcode: generatedBarcode,
         };
-        console.log('New product created:', newProd);
-        setProducts(prev => {
-          const updated = [newProd, ...prev];
-          console.log('Updated products array:', updated);
-          return updated;
-        });
+        
+        console.log('🔍 Data to save:', newProdData);
+        
+        const savedProduct = await storageService.saveProduct(newProdData);
+        
+        console.log('✅ Product saved to database:', savedProduct);
+        console.log('✅ Barcode from response:', savedProduct.barcode);
+        
+        // Reload all products from database to get fresh data with correct format
+        const allProducts = await storageService.getProducts();
+        setProducts(allProducts);
+        
+        console.log('✅ Products reloaded from database');
       }
 
       console.log('Product save successful, closing modal');
       setIsOpenModal(false);
-    } catch (err) {
-      console.error('Error saving product:', err);
-      setError('Terjadi kesalahan saat menyimpan produk: ' + (err as Error).message);
+    } catch (err: any) {
+      console.error('❌ Error saving product:', err);
+      
+      // Parse error message from backend or storage service
+      let errorMessage = 'Gagal menyimpan produk. Silakan coba lagi.';
+      
+      if (err?.message) {
+        errorMessage = err.message;
+      } else if (err?.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err?.response?.data?.errors) {
+        // Laravel validation errors
+        const errors = Object.values(err.response.data.errors).flat();
+        errorMessage = `Validasi gagal: ${errors.join(', ')}`;
+      }
+      
+      setError(errorMessage);
+      
+      // Show alert for critical errors
+      if (errorMessage.includes('UMKM')) {
+        alert('⚠️ ' + errorMessage);
+      }
     }
   };
 
   // Formatting currency
   const formatCurrency = (amount: number) => {
     if (currentPreset.currency === '$') {
-      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
+    // Format Rupiah with thousands separator (titik untuk ribuan)
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };
 
@@ -466,7 +530,7 @@ export default function AdminProducts({
                           <span className={`text-sm font-extrabold ${
                             p.stock === 0 ? 'text-rose-500' : p.stock <= 10 ? 'text-amber-500' : 'text-slate-800 dark:text-slate-200'
                           }`}>
-                            {p.stock} pcs
+                            {p.stock.toLocaleString('id-ID')} pcs
                           </span>
                           {p.stock === 0 && (
                             <span className="text-[9px] font-bold text-rose-500 uppercase tracking-wider">HABIS TOTAL</span>

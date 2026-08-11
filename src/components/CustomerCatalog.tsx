@@ -79,7 +79,7 @@ export default function CustomerCatalog({
 
   const formatCurrency = (amount: number) => {
     if (currentPreset.currency === '$') {
-      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}`;
+      return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
     }
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };
@@ -194,6 +194,7 @@ export default function CustomerCatalog({
     // Create a new transition entry
     const newTx: Transaction = {
       id: transactions.length > 0 ? Math.max(...transactions.map(t => t.id)) + 1 : 301,
+      umkmPresetId: currentPreset.id, // Link to current UMKM for data isolation
       customerId: currentUser ? currentUser.id : 101, // linked to customer ID log
       transactionCode: randCode,
       totalAmount: totalCartAmount,

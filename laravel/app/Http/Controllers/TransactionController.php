@@ -13,12 +13,18 @@ class TransactionController extends Controller
 {
     /**
      * Display a listing of the transactions.
+     * Can filter by umkm_preset_id if provided in query parameter.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $transactions = Transaction::with(['customer', 'items.product'])
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = Transaction::with(['customer', 'items.product']);
+        
+        // Filter by umkm_preset_id if provided
+        if ($request->has('umkm_preset_id')) {
+            $query->where('umkm_preset_id', $request->input('umkm_preset_id'));
+        }
+        
+        $transactions = $query->orderBy('created_at', 'desc')->get();
         
         return response()->json([
             'status' => 'success',
@@ -32,6 +38,7 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'umkm_preset_id' => 'required|integer|exists:umkm_presets,id', // Changed from umkmPresetId
             'customer_id' => 'required|exists:customers,id',
             'transaction_code' => 'required|string|unique:transactions,transaction_code',
             'total_amount' => 'required|numeric|min:0',
@@ -49,6 +56,7 @@ class TransactionController extends Controller
         try {
             // Create transaction
             $transaction = Transaction::create([
+                'umkm_preset_id' => $validated['umkm_preset_id'],
                 'customer_id' => $validated['customer_id'],
                 'transaction_code' => $validated['transaction_code'],
                 'total_amount' => $validated['total_amount'],
@@ -75,6 +83,7 @@ class TransactionController extends Controller
             // Create income record if transaction is completed
             if ($validated['status'] === 'completed' || $validated['status'] === 'paid') {
                 IncomeRecord::create([
+                    'umkm_preset_id' => $validated['umkm_preset_id'],
                     'transaction_id' => $transaction->id,
                     'amount' => $validated['total_amount'],
                     'date' => now()->toDateString(),

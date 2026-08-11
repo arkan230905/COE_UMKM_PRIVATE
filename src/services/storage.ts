@@ -21,6 +21,7 @@ const USE_API_STORAGE = true;
 
 export class StorageService {
   private useApi: boolean;
+  private currentUmkmId: string | null = null;
 
   constructor(useApi: boolean = USE_API_STORAGE) {
     this.useApi = useApi;
@@ -32,6 +33,21 @@ export class StorageService {
   setUseApi(useApi: boolean) {
     this.useApi = useApi;
     console.log(`Storage mode: ${useApi ? 'API (Laravel)' : 'localStorage'}`);
+  }
+
+  /**
+   * Set current UMKM ID for data isolation
+   */
+  setCurrentUmkmId(umkmId: string | null) {
+    this.currentUmkmId = umkmId;
+    console.log('🔐 Current UMKM ID set:', umkmId);
+  }
+
+  /**
+   * Get current UMKM ID
+   */
+  getCurrentUmkmId(): string | null {
+    return this.currentUmkmId;
   }
 
   /**
@@ -241,8 +257,22 @@ export class StorageService {
   async getCategories(): Promise<Category[]> {
     if (this.useApi) {
       try {
-        const response = await apiService.getCategories();
-        return (response.data as Category[]) || [];
+        // Send umkm_preset_id as query parameter if available
+        const endpoint = this.currentUmkmId 
+          ? `/categories?umkm_preset_id=${this.currentUmkmId}` 
+          : '/categories';
+        
+        const response = await apiService.get(endpoint);
+        const allCategories = (response.data as any[]) || [];
+        
+        // Map backend format (snake_case) to frontend format (camelCase)
+        const mapped = allCategories.map(cat => ({
+          ...cat,
+          umkmPresetId: cat.umkm_preset_id || cat.umkmPresetId
+        }));
+        
+        console.log(`✅ Loaded ${mapped.length} categories from backend for UMKM ${this.currentUmkmId || 'all'}`);
+        return mapped;
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Category>('categories');
@@ -254,8 +284,30 @@ export class StorageService {
   async saveCategory(category: Omit<Category, 'id'>): Promise<Category> {
     if (this.useApi) {
       try {
-        const response = await apiService.createCategory(category);
-        return response.data as Category;
+        // Validate umkmPresetId is not placeholder
+        if (!category.umkmPresetId || category.umkmPresetId === 'placeholder') {
+          throw new Error('UMKM belum dipilih. umkmPresetId tidak valid.');
+        }
+        
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {
+          name: category.name,
+          slug: category.slug,
+          description: category.description,
+          umkm_preset_id: parseInt(String(category.umkmPresetId)) // Ensure integer
+        };
+        
+        console.log('📤 saveCategory - Sending to backend:', backendData);
+        
+        const response = await apiService.createCategory(backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          createdAt: data.created_at || data.createdAt
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -267,8 +319,22 @@ export class StorageService {
   async updateCategory(id: number, category: Partial<Category>): Promise<Category> {
     if (this.useApi) {
       try {
-        const response = await apiService.updateCategory(id, category as any);
-        return response.data as Category;
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {};
+        if (category.umkmPresetId !== undefined) backendData.umkm_preset_id = category.umkmPresetId;
+        if (category.name !== undefined) backendData.name = category.name;
+        if (category.slug !== undefined) backendData.slug = category.slug;
+        if (category.description !== undefined) backendData.description = category.description;
+        
+        const response = await apiService.updateCategory(id, backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          createdAt: data.created_at || data.createdAt
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -297,8 +363,28 @@ export class StorageService {
   async getProducts(): Promise<Product[]> {
     if (this.useApi) {
       try {
-        const response = await apiService.getProducts();
-        return (response.data as Product[]) || [];
+        // Send umkm_preset_id as query parameter if available
+        const endpoint = this.currentUmkmId 
+          ? `/products?umkm_preset_id=${this.currentUmkmId}` 
+          : '/products';
+        
+        const response = await apiService.get(endpoint);
+        const allProducts = (response.data as any[]) || [];
+        
+        // Map backend format (snake_case) to frontend format (camelCase)
+        const mapped = allProducts.map(prod => ({
+          ...prod,
+          umkmPresetId: prod.umkm_preset_id || prod.umkmPresetId,
+          categoryId: prod.category_id || prod.categoryId,
+          isActive: prod.is_active !== undefined ? prod.is_active : prod.isActive,
+          createdAt: prod.created_at || prod.createdAt,
+          barcode: prod.barcode || null,
+          price: typeof prod.price === 'string' ? parseFloat(prod.price) : prod.price, // Parse string to number
+          stock: typeof prod.stock === 'string' ? parseInt(prod.stock) : prod.stock
+        }));
+        
+        console.log(`✅ Loaded ${mapped.length} products from backend for UMKM ${this.currentUmkmId || 'all'}`);
+        return mapped;
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Product>('products');
@@ -310,11 +396,63 @@ export class StorageService {
   async saveProduct(product: Omit<Product, 'id'>): Promise<Product> {
     if (this.useApi) {
       try {
-        const response = await apiService.createProduct(product);
-        return response.data as Product;
-      } catch (error) {
-        console.error('API Error:', error);
-        throw error;
+        console.log('📤 saveProduct - Received product data:', product);
+        
+        // Validate umkmPresetId is not placeholder
+        if (!product.umkmPresetId || product.umkmPresetId === 'placeholder') {
+          throw new Error('UMKM belum dipilih. Silakan pilih UMKM terlebih dahulu.');
+        }
+        
+        // Parse umkmPresetId to integer
+        const umkmPresetIdNum = parseInt(String(product.umkmPresetId));
+        if (isNaN(umkmPresetIdNum)) {
+          throw new Error(`UMKM ID tidak valid: ${product.umkmPresetId}`);
+        }
+        
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {
+          umkm_preset_id: umkmPresetIdNum, // Ensure integer
+          category_id: product.categoryId,
+          name: product.name,
+          slug: product.slug,
+          description: product.description,
+          price: product.price,
+          stock: product.stock,
+          image: product.image,
+          is_active: product.isActive !== undefined ? product.isActive : true,
+          barcode: product.barcode
+        };
+        
+        console.log('📤 saveProduct - Sending to backend:', backendData);
+        console.log('📤 umkm_preset_id value:', backendData.umkm_preset_id, 'type:', typeof backendData.umkm_preset_id);
+        
+        const response = await apiService.createProduct(backendData);
+        const data = response.data as any;
+        
+        console.log('✅ saveProduct - Response from backend:', data);
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          categoryId: data.category_id || data.categoryId,
+          isActive: data.is_active !== undefined ? data.is_active : data.isActive,
+          createdAt: data.created_at || data.createdAt,
+          barcode: data.barcode || null,
+          price: typeof data.price === 'string' ? parseFloat(data.price) : data.price, // Parse string to number
+          stock: typeof data.stock === 'string' ? parseInt(data.stock) : data.stock
+        };
+      } catch (error: any) {
+        console.error('❌ API Error saveProduct:', error);
+        
+        // Parse Laravel validation errors
+        if (error?.response?.data?.errors) {
+          const validationErrors = error.response.data.errors;
+          const errorMessages = Object.values(validationErrors).flat();
+          throw new Error(`Validasi gagal: ${errorMessages.join(', ')}`);
+        }
+        
+        throw new Error(error?.response?.data?.message || error?.message || 'Gagal menyimpan produk ke database');
       }
     }
     return this.saveToLocalStorage<Product>('products', product);
@@ -323,8 +461,33 @@ export class StorageService {
   async updateProduct(id: number, product: Partial<Product>): Promise<Product> {
     if (this.useApi) {
       try {
-        const response = await apiService.updateProduct(id, product);
-        return response.data as Product;
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {};
+        if (product.umkmPresetId !== undefined) backendData.umkm_preset_id = product.umkmPresetId;
+        if (product.categoryId !== undefined) backendData.category_id = product.categoryId;
+        if (product.name !== undefined) backendData.name = product.name;
+        if (product.slug !== undefined) backendData.slug = product.slug;
+        if (product.description !== undefined) backendData.description = product.description;
+        if (product.price !== undefined) backendData.price = product.price;
+        if (product.stock !== undefined) backendData.stock = product.stock;
+        if (product.image !== undefined) backendData.image = product.image;
+        if (product.isActive !== undefined) backendData.is_active = product.isActive;
+        if (product.barcode !== undefined) backendData.barcode = product.barcode;
+        
+        const response = await apiService.updateProduct(id, backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          categoryId: data.category_id || data.categoryId,
+          isActive: data.is_active !== undefined ? data.is_active : data.isActive,
+          createdAt: data.created_at || data.createdAt,
+          barcode: data.barcode || null,
+          price: typeof data.price === 'string' ? parseFloat(data.price) : data.price, // Parse string to number
+          stock: typeof data.stock === 'string' ? parseInt(data.stock) : data.stock
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -353,8 +516,24 @@ export class StorageService {
   async getCustomers(): Promise<Customer[]> {
     if (this.useApi) {
       try {
-        const response = await apiService.getCustomers();
-        return (response.data as Customer[]) || [];
+        // Send umkm_preset_id as query parameter if available
+        const endpoint = this.currentUmkmId 
+          ? `/customers?umkm_preset_id=${this.currentUmkmId}` 
+          : '/customers';
+        
+        const response = await apiService.get(endpoint);
+        const allCustomers = (response.data as any[]) || [];
+        
+        // Map backend format (snake_case) to frontend format (camelCase)
+        const mapped = allCustomers.map(cust => ({
+          ...cust,
+          umkmPresetId: cust.umkm_preset_id || cust.umkmPresetId,
+          userId: cust.user_id || cust.userId,
+          createdAt: cust.created_at || cust.createdAt
+        }));
+        
+        console.log(`✅ Loaded ${mapped.length} customers from backend for UMKM ${this.currentUmkmId || 'all'}`);
+        return mapped;
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Customer>('customers');
@@ -366,8 +545,26 @@ export class StorageService {
   async saveCustomer(customer: Omit<Customer, 'id'>): Promise<Customer> {
     if (this.useApi) {
       try {
-        const response = await apiService.createCustomer(customer);
-        return response.data as Customer;
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {
+          umkm_preset_id: customer.umkmPresetId,
+          user_id: customer.userId,
+          name: customer.name,
+          email: customer.email,
+          phone: customer.phone,
+          address: customer.address
+        };
+        
+        const response = await apiService.createCustomer(backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          userId: data.user_id || data.userId,
+          createdAt: data.created_at || data.createdAt
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -379,8 +576,25 @@ export class StorageService {
   async updateCustomer(id: number, customer: Partial<Customer>): Promise<Customer> {
     if (this.useApi) {
       try {
-        const response = await apiService.updateCustomer(id, customer);
-        return response.data as Customer;
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {};
+        if (customer.umkmPresetId !== undefined) backendData.umkm_preset_id = customer.umkmPresetId;
+        if (customer.userId !== undefined) backendData.user_id = customer.userId;
+        if (customer.name !== undefined) backendData.name = customer.name;
+        if (customer.email !== undefined) backendData.email = customer.email;
+        if (customer.phone !== undefined) backendData.phone = customer.phone;
+        if (customer.address !== undefined) backendData.address = customer.address;
+        
+        const response = await apiService.updateCustomer(id, backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          userId: data.user_id || data.userId,
+          createdAt: data.created_at || data.createdAt
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -409,8 +623,27 @@ export class StorageService {
   async getTransactions(): Promise<Transaction[]> {
     if (this.useApi) {
       try {
-        const response = await apiService.getTransactions();
-        return (response.data as Transaction[]) || [];
+        // Send umkm_preset_id as query parameter if available
+        const endpoint = this.currentUmkmId 
+          ? `/transactions?umkm_preset_id=${this.currentUmkmId}` 
+          : '/transactions';
+        
+        const response = await apiService.get(endpoint);
+        const allTransactions = (response.data as any[]) || [];
+        
+        // Map backend format (snake_case) to frontend format (camelCase)
+        const mapped = allTransactions.map(trans => ({
+          ...trans,
+          umkmPresetId: trans.umkm_preset_id || trans.umkmPresetId,
+          customerId: trans.customer_id || trans.customerId,
+          transactionCode: trans.transaction_code || trans.transactionCode,
+          totalAmount: trans.total_amount || trans.totalAmount,
+          paymentMethod: trans.payment_method || trans.paymentMethod,
+          createdAt: trans.created_at || trans.createdAt
+        }));
+        
+        console.log(`✅ Loaded ${mapped.length} transactions from backend for UMKM ${this.currentUmkmId || 'all'}`);
+        return mapped;
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Transaction>('transactions');
@@ -422,8 +655,36 @@ export class StorageService {
   async saveTransaction(transaction: Omit<Transaction, 'id'>): Promise<Transaction> {
     if (this.useApi) {
       try {
-        const response = await apiService.createTransaction(transaction);
-        return response.data as Transaction;
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {
+          umkm_preset_id: transaction.umkmPresetId,
+          customer_id: transaction.customerId,
+          transaction_code: transaction.transactionCode,
+          total_amount: transaction.totalAmount,
+          status: transaction.status,
+          payment_method: transaction.paymentMethod,
+          notes: transaction.notes,
+          items: transaction.items?.map(item => ({
+            product_id: item.productId,
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.subtotal
+          }))
+        };
+        
+        const response = await apiService.createTransaction(backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          customerId: data.customer_id || data.customerId,
+          transactionCode: data.transaction_code || data.transactionCode,
+          totalAmount: data.total_amount || data.totalAmount,
+          paymentMethod: data.payment_method || data.paymentMethod,
+          createdAt: data.created_at || data.createdAt
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -452,8 +713,28 @@ export class StorageService {
   async getExpenses(): Promise<Expense[]> {
     if (this.useApi) {
       try {
-        const response = await apiService.getExpenses();
-        return (response.data as Expense[]) || [];
+        // Send umkm_preset_id as query parameter if available
+        const endpoint = this.currentUmkmId 
+          ? `/expenses?umkm_preset_id=${this.currentUmkmId}` 
+          : '/expenses';
+        
+        const response = await apiService.get(endpoint);
+        const allExpenses = (response.data as any[]) || [];
+        
+        // Map backend format (snake_case) to frontend format (camelCase)
+        const mapped = allExpenses.map(exp => ({
+          ...exp,
+          umkmPresetId: exp.umkm_preset_id || exp.umkmPresetId,
+          expenseCategory: exp.expense_category || exp.expenseCategory,
+          materialName: exp.material_name || exp.materialName,
+          pricePerUnit: exp.price_per_unit || exp.pricePerUnit,
+          shippingCost: exp.shipping_cost || exp.shippingCost,
+          ppnPercent: exp.ppn_percent || exp.ppnPercent,
+          createdAt: exp.created_at || exp.createdAt
+        }));
+        
+        console.log(`✅ Loaded ${mapped.length} expenses from backend for UMKM ${this.currentUmkmId || 'all'}`);
+        return mapped;
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
         return this.getFromLocalStorage<Expense>('expenses');
@@ -465,8 +746,37 @@ export class StorageService {
   async saveExpense(expense: Omit<Expense, 'id'>): Promise<Expense> {
     if (this.useApi) {
       try {
-        const response = await apiService.createExpense(expense);
-        return response.data as Expense;
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {
+          umkm_preset_id: expense.umkmPresetId,
+          expense_category: expense.expenseCategory,
+          description: expense.description,
+          amount: expense.amount,
+          date: expense.date,
+          notes: expense.notes,
+          material_name: expense.materialName,
+          quantity: expense.quantity,
+          unit: expense.unit,
+          price_per_unit: expense.pricePerUnit,
+          shipping_cost: expense.shippingCost,
+          discount: expense.discount,
+          ppn_percent: expense.ppnPercent
+        };
+        
+        const response = await apiService.createExpense(backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          expenseCategory: data.expense_category || data.expenseCategory,
+          materialName: data.material_name || data.materialName,
+          pricePerUnit: data.price_per_unit || data.pricePerUnit,
+          shippingCost: data.shipping_cost || data.shippingCost,
+          ppnPercent: data.ppn_percent || data.ppnPercent,
+          createdAt: data.created_at || data.createdAt
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -478,8 +788,36 @@ export class StorageService {
   async updateExpense(id: number, expense: Partial<Expense>): Promise<Expense> {
     if (this.useApi) {
       try {
-        const response = await apiService.updateExpense(id, expense);
-        return response.data as Expense;
+        // Map frontend format (camelCase) to backend format (snake_case)
+        const backendData: any = {};
+        if (expense.umkmPresetId !== undefined) backendData.umkm_preset_id = expense.umkmPresetId;
+        if (expense.expenseCategory !== undefined) backendData.expense_category = expense.expenseCategory;
+        if (expense.description !== undefined) backendData.description = expense.description;
+        if (expense.amount !== undefined) backendData.amount = expense.amount;
+        if (expense.date !== undefined) backendData.date = expense.date;
+        if (expense.notes !== undefined) backendData.notes = expense.notes;
+        if (expense.materialName !== undefined) backendData.material_name = expense.materialName;
+        if (expense.quantity !== undefined) backendData.quantity = expense.quantity;
+        if (expense.unit !== undefined) backendData.unit = expense.unit;
+        if (expense.pricePerUnit !== undefined) backendData.price_per_unit = expense.pricePerUnit;
+        if (expense.shippingCost !== undefined) backendData.shipping_cost = expense.shippingCost;
+        if (expense.discount !== undefined) backendData.discount = expense.discount;
+        if (expense.ppnPercent !== undefined) backendData.ppn_percent = expense.ppnPercent;
+        
+        const response = await apiService.updateExpense(id, backendData);
+        const data = response.data as any;
+        
+        // Map response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          expenseCategory: data.expense_category || data.expenseCategory,
+          materialName: data.material_name || data.materialName,
+          pricePerUnit: data.price_per_unit || data.pricePerUnit,
+          shippingCost: data.shipping_cost || data.shippingCost,
+          ppnPercent: data.ppn_percent || data.ppnPercent,
+          createdAt: data.created_at || data.createdAt
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
