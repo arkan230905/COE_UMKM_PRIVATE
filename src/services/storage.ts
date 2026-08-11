@@ -663,6 +663,7 @@ export class StorageService {
           status: transaction.status,
           payment_method: transaction.paymentMethod,
           notes: transaction.notes,
+          is_offline: transaction.isOffline || false, // ✅ ADDED
           items: transaction.items?.map(item => ({
             product_id: item.productId,
             quantity: item.quantity,
@@ -689,9 +690,10 @@ export class StorageService {
           umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
           customerId: data.customer_id || data.customerId,
           transactionCode: data.transaction_code || data.transactionCode,
-          totalAmount: data.total_amount || data.totalAmount,
+          totalAmount: typeof data.total_amount === 'string' ? parseFloat(data.total_amount) : data.total_amount,
           paymentMethod: data.payment_method || data.paymentMethod,
-          createdAt: data.created_at || data.createdAt
+          createdAt: data.created_at || data.createdAt,
+          isOffline: data.is_offline !== undefined ? data.is_offline : data.isOffline
         };
       } catch (error) {
         console.error('API Error:', error);

@@ -39,12 +39,13 @@ class TransactionController extends Controller
     {
         $validated = $request->validate([
             'umkm_preset_id' => 'required|integer|exists:umkm_presets,id',
-            'customer_id' => 'nullable|exists:customers,id', // ✅ Changed to nullable
+            'customer_id' => 'nullable|exists:customers,id',
             'transaction_code' => 'required|string|unique:transactions,transaction_code',
             'total_amount' => 'required|numeric|min:0',
             'status' => 'required|in:pending,paid,completed,cancelled',
             'payment_method' => 'required|string',
             'notes' => 'nullable|string',
+            'is_offline' => 'nullable|boolean', // ✅ ADDED
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity' => 'required|integer|min:1',
@@ -76,12 +77,13 @@ class TransactionController extends Controller
             // Create transaction
             $transaction = Transaction::create([
                 'umkm_preset_id' => $validated['umkm_preset_id'],
-                'customer_id' => $customerId, // ✅ Use walk-in customer if not provided
+                'customer_id' => $customerId,
                 'transaction_code' => $validated['transaction_code'],
                 'total_amount' => $validated['total_amount'],
                 'status' => $validated['status'],
                 'payment_method' => $validated['payment_method'],
                 'notes' => $validated['notes'] ?? null,
+                'is_offline' => $validated['is_offline'] ?? false, // ✅ ADDED
             ]);
 
             // Create transaction items and update stock

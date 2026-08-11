@@ -16,11 +16,13 @@ class Transaction extends Model
         'total_amount',
         'status',
         'payment_method',
-        'notes'
+        'notes',
+        'is_offline' // ✅ ADDED
     ];
 
     protected $casts = [
-        'total_amount' => 'decimal:2'
+        'total_amount' => 'float', // ✅ Changed from decimal:2 to float
+        'is_offline' => 'boolean'
     ];
 
     /**
