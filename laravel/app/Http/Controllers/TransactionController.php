@@ -38,8 +38,8 @@ class TransactionController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'umkm_preset_id' => 'required|integer|exists:umkm_presets,id', // Changed from umkmPresetId
-            'customer_id' => 'required|exists:customers,id',
+            'umkm_preset_id' => 'required|integer|exists:umkm_presets,id',
+            'customer_id' => 'nullable|exists:customers,id', // ✅ Changed to nullable
             'transaction_code' => 'required|string|unique:transactions,transaction_code',
             'total_amount' => 'required|numeric|min:0',
             'status' => 'required|in:pending,paid,completed,cancelled',
@@ -54,10 +54,29 @@ class TransactionController extends Controller
 
         DB::beginTransaction();
         try {
+            // ✅ If customer_id not provided or doesn't exist, create/get walk-in customer
+            $customerId = $validated['customer_id'] ?? null;
+            
+            if (!$customerId) {
+                // Find or create walk-in customer for this UMKM
+                $walkInCustomer = \App\Models\Customer::firstOrCreate(
+                    [
+                        'umkm_preset_id' => $validated['umkm_preset_id'],
+                        'email' => 'walkin@' . $validated['umkm_preset_id'] . '.local'
+                    ],
+                    [
+                        'name' => 'Walk-in Customer',
+                        'phone' => '-',
+                        'address' => '-'
+                    ]
+                );
+                $customerId = $walkInCustomer->id;
+            }
+
             // Create transaction
             $transaction = Transaction::create([
                 'umkm_preset_id' => $validated['umkm_preset_id'],
-                'customer_id' => $validated['customer_id'],
+                'customer_id' => $customerId, // ✅ Use walk-in customer if not provided
                 'transaction_code' => $validated['transaction_code'],
                 'total_amount' => $validated['total_amount'],
                 'status' => $validated['status'],

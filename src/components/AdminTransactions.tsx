@@ -165,7 +165,7 @@ export default function AdminTransactions({
     
     const newTransactionData = {
       umkmPresetId: currentPreset.id, // Link to current UMKM for data isolation
-      customerId: 390, // Pelanggan toko/walk-in (hardcoded walk-in customer ID)
+      // ✅ NO customerId for offline transactions - backend will auto-create walk-in customer
       transactionCode: txCode,
       totalAmount: calculateTotal(),
       status: 'completed', // Offline transaction langsung selesai

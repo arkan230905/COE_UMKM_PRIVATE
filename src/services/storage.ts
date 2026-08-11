@@ -658,7 +658,6 @@ export class StorageService {
         // Map frontend format (camelCase) to backend format (snake_case)
         const backendData: any = {
           umkm_preset_id: transaction.umkmPresetId,
-          customer_id: transaction.customerId,
           transaction_code: transaction.transactionCode,
           total_amount: transaction.totalAmount,
           status: transaction.status,
@@ -672,8 +671,17 @@ export class StorageService {
           }))
         };
         
+        // ✅ Only add customer_id if it exists (for online transactions)
+        if (transaction.customerId) {
+          backendData.customer_id = transaction.customerId;
+        }
+        
+        console.log('📤 Sending transaction to backend:', backendData);
+        
         const response = await apiService.createTransaction(backendData);
         const data = response.data as any;
+        
+        console.log('✅ Transaction response from backend:', data);
         
         // Map response back to frontend format
         return {

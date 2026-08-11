@@ -147,11 +147,9 @@ export default function CashierPOS({
       return;
     }
 
-    const cleanCustomer = selectedCustomerId !== 'guest' ? Number(selectedCustomerId) : 390; // Fallback to walk-in customer
-
     const newTransactionData = {
       umkmPresetId: currentPreset.id, // Link to current UMKM for data isolation
-      customerId: cleanCustomer,
+      // ✅ NO customerId for offline transactions - backend will auto-create walk-in customer
       transactionCode: `POS${Math.floor(100 + Math.random() * 900)}${Date.now().toString().slice(-4)}`,
       totalAmount: totalAmount,
       status: 'completed',
