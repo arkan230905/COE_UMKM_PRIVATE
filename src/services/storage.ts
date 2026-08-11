@@ -631,18 +631,22 @@ export class StorageService {
         const response = await apiService.get(endpoint);
         const allTransactions = (response.data as any[]) || [];
         
+        console.log('📦 Raw transactions from backend:', allTransactions.slice(0, 2));
+        
         // Map backend format (snake_case) to frontend format (camelCase)
         const mapped = allTransactions.map(trans => ({
           ...trans,
           umkmPresetId: trans.umkm_preset_id || trans.umkmPresetId,
           customerId: trans.customer_id || trans.customerId,
           transactionCode: trans.transaction_code || trans.transactionCode,
-          totalAmount: trans.total_amount || trans.totalAmount,
+          totalAmount: typeof trans.total_amount === 'string' ? parseFloat(trans.total_amount) : trans.total_amount,
           paymentMethod: trans.payment_method || trans.paymentMethod,
-          createdAt: trans.created_at || trans.createdAt
+          createdAt: trans.created_at || trans.createdAt,
+          isOffline: trans.is_offline !== undefined ? trans.is_offline : (trans.isOffline || false) // ✅ ADDED
         }));
         
         console.log(`✅ Loaded ${mapped.length} transactions from backend for UMKM ${this.currentUmkmId || 'all'}`);
+        console.log('📦 Sample mapped transaction:', mapped[0]);
         return mapped;
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
