@@ -48,6 +48,9 @@ class TransactionController extends Controller
             'is_offline' => 'nullable|boolean', // ✅ ADDED
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
+            'items.*.product_name' => 'nullable|string', // ✅ ADDED snapshot field
+            'items.*.product_description' => 'nullable|string', // ✅ ADDED snapshot field
+            'items.*.category_name' => 'nullable|string', // ✅ ADDED snapshot field
             'items.*.quantity' => 'required|integer|min:1',
             'items.*.price' => 'required|numeric|min:0',
             'items.*.subtotal' => 'required|numeric|min:0',
@@ -88,16 +91,22 @@ class TransactionController extends Controller
 
             // Create transaction items and update stock
             foreach ($validated['items'] as $item) {
+                // Get product for snapshot data
+                $product = Product::with('category')->findOrFail($item['product_id']);
+                
                 TransactionItem::create([
                     'transaction_id' => $transaction->id,
                     'product_id' => $item['product_id'],
                     'quantity' => $item['quantity'],
                     'price' => $item['price'],
                     'subtotal' => $item['subtotal'],
+                    // ✅ Save snapshot data from frontend OR fallback to database
+                    'product_name' => $item['product_name'] ?? $product->name,
+                    'product_description' => $item['product_description'] ?? $product->description,
+                    'category_name' => $item['category_name'] ?? $product->category->name ?? '-',
                 ]);
 
                 // Update product stock
-                $product = Product::findOrFail($item['product_id']);
                 $product->decrement('stock', $item['quantity']);
             }
 

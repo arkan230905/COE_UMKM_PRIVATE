@@ -12,12 +12,15 @@ class TransactionItem extends Model
         'product_id',
         'quantity',
         'price',
-        'subtotal'
+        'subtotal',
+        'product_name', // ✅ Snapshot field
+        'product_description', // ✅ Snapshot field
+        'category_name' // ✅ Snapshot field
     ];
 
     protected $casts = [
-        'price' => 'decimal:2',
-        'subtotal' => 'decimal:2',
+        'price' => 'float', // ✅ Changed from decimal:2 to float
+        'subtotal' => 'float', // ✅ Changed from decimal:2 to float
         'quantity' => 'integer'
     ];
 

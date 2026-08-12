@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔄 Force Refresh Cache - SIUPIN</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            animation: spin 2s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .instruction-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+            border-radius: 8px;
+        }
+        
+        .instruction-box h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+        
+        .instruction-box ol {
+            margin-left: 20px;
+            color: #333;
+        }
+        
+        .instruction-box li {
+            margin: 10px 0;
+            line-height: 1.6;
+        }
+        
+        .keyboard-combo {
+            display: inline-block;
+            background: #333;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 13px;
+            margin: 0 3px;
+        }
+        
+        .warning-box {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .warning-box strong {
+            color: #856404;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .warning-box p {
+            color: #856404;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+        
+        .button-group {
+            margin-top: 30px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+        
+        button {
+            padding: 15px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #e0e0e0;
+            color: #333;
+        }
+        
+        .btn-secondary:hover {
+            background: #d0d0d0;
+        }
+        
+        .success-message {
+            display: none;
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 8px;
+            color: #155724;
+        }
+        
+        .success-message.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="icon">🔄</div>
+        <h1>Force Refresh Browser Cache</h1>
+        <p class="subtitle">Paksa browser untuk reload semua file JavaScript & CSS terbaru</p>
+        
+        <div class="warning-box">
+            <strong>⚠️ MASALAH YANG DIPERBAIKI:</strong>
+            <p>
+                • Barcode masih tampil "N/A" padahal sudah digenerate<br>
+                • Format harga masih "Rp 20000.00" bukan "Rp 20.000"<br>
+                • Format stok masih "10000 pcs" bukan "10.000 pcs"<br>
+                <br>
+                <strong>PENYEBAB:</strong> Browser menggunakan file JavaScript LAMA yang di-cache.
+            </p>
+        </div>
+        
+        <div class="instruction-box">
+            <h3>📋 Cara Hard Refresh (Pilih salah satu):</h3>
+            <ol>
+                <li>
+                    <strong>Windows:</strong><br>
+                    Tekan <span class="keyboard-combo">Ctrl</span> + <span class="keyboard-combo">Shift</span> + <span class="keyboard-combo">R</span><br>
+                    atau <span class="keyboard-combo">Ctrl</span> + <span class="keyboard-combo">F5</span>
+                </li>
+                <li>
+                    <strong>Mac:</strong><br>
+                    Tekan <span class="keyboard-combo">Cmd</span> + <span class="keyboard-combo">Shift</span> + <span class="keyboard-combo">R</span>
+                </li>
+                <li>
+                    <strong>Manual Clear Cache:</strong><br>
+                    Buka DevTools (F12) → Tab <strong>Application</strong> → <strong>Clear Storage</strong> → <strong>Clear site data</strong>
+                </li>
+            </ol>
+        </div>
+        
+        <div class="success-message" id="successMessage">
+            ✅ Cache clearing berhasil! Silakan refresh halaman utama SIUPIN dengan hard refresh.
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-primary" onclick="hardRefresh()">
+                🔄 Hard Refresh Sekarang
+            </button>
+            <button class="btn-secondary" onclick="clearAllCache()">
+                🗑️ Clear All Cache
+            </button>
+        </div>
+        
+        <div class="instruction-box" style="margin-top: 30px; background: #e3f2fd; border-color: #2196f3;">
+            <h3 style="color: #1976d2;">✨ Setelah Refresh, Cek Apakah:</h3>
+            <ol>
+                <li>✅ Barcode tampil sebagai gambar SVG (bukan "N/A")</li>
+                <li>✅ Harga tampil: "Rp 20.000" (ada titik ribuan)</li>
+                <li>✅ Stok tampil: "10.000 pcs" (ada titik ribuan)</li>
+                <li>✅ Data baru yang disimpan memiliki barcode di database</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        function hardRefresh() {
+            // Show success message
+            document.getElementById('successMessage').classList.add('show');
+            
+            // Wait 1 second then perform hard reload
+            setTimeout(() => {
+                // Force reload from server, not cache
+                window.location.href = window.location.origin + '/?cachebust=' + Date.now();
+                // Hard reload
+                setTimeout(() => {
+                    location.reload(true);
+                }, 100);
+            }, 1000);
+        }
+        
+        function clearAllCache() {
+            // Clear localStorage
+            localStorage.clear();
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Try to clear service worker cache
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for (let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+            }
+            
+            // Clear cache storage
+            if ('caches' in window) {
+                caches.keys().then(function(names) {
+                    for (let name of names) {
+                        caches.delete(name);
+                    }
+                });
+            }
+            
+            // Show success and reload
+            document.getElementById('successMessage').classList.add('show');
+            
+            setTimeout(() => {
+                alert('✅ Semua cache telah dibersihkan!\n\nHalaman akan di-reload sekarang...');
+                location.reload(true);
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

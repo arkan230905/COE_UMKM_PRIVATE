@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Search, Edit2, Trash2, FolderTree, AlertCircle, X, AlignLeft } from 'lucide-react';
 import { Category, UMKMPreset } from '../types';
+import storageService from '../services/storage';
 
 interface AdminCategoriesProps {
   categories: Category[];
@@ -44,15 +45,27 @@ export default function AdminCategories({
     setIsOpenModal(true);
   };
 
-  const handleDelete = (id: number) => {
+  const handleDelete = async (id: number) => {
     if (confirm('Apakah Anda yakin ingin menghapus kategori ini? Semua produk dalam kategori ini mungkin akan kehilangan referensi.')) {
-      setCategories(prev => prev.filter(c => c.id !== id));
+      try {
+        await storageService.deleteCategory(id);
+        setCategories(prev => prev.filter(c => c.id !== id));
+        console.log('✅ Category deleted from database:', id);
+      } catch (err: any) {
+        console.error('❌ Error deleting category:', err);
+        alert('Gagal menghapus kategori: ' + (err.message || 'Unknown error'));
+      }
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    // Validate UMKM is selected
+    if (!currentPreset || currentPreset.id === 'placeholder') {
+      return setError('UMKM belum dipilih. Silakan login sebagai admin UMKM terlebih dahulu.');
+    }
 
     if (!name.trim()) return setError('Nama kategori wajib diisi.');
 
@@ -62,28 +75,46 @@ export default function AdminCategories({
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)+/g, '');
 
-    if (editingCategory) {
-      // Update
-      setCategories(prev =>
-        prev.map(c =>
-          c.id === editingCategory.id
-            ? { ...c, name, slug: generatedSlug, description }
-            : c
-        )
-      );
-    } else {
-      // Create
-      const newCat: Category = {
-        id: categories.length > 0 ? Math.max(...categories.map(c => c.id)) + 1 : 1,
-        name,
-        slug: generatedSlug,
-        description,
-        createdAt: new Date().toISOString().substring(0, 10),
-      };
-      setCategories(prev => [...prev, newCat]);
-    }
+    try {
+      if (editingCategory) {
+        // Update - Save to database via API
+        const updatedCategory = await storageService.updateCategory(editingCategory.id, {
+          name,
+          slug: generatedSlug,
+          description
+        });
+        
+        // Update local state
+        setCategories(prev =>
+          prev.map(c =>
+            c.id === editingCategory.id ? updatedCategory : c
+          )
+        );
+        
+        console.log('✅ Category updated in database:', updatedCategory);
+      } else {
+        // Create - Save to database via API
+        const newCatData = {
+          umkmPresetId: currentPreset.id, // Link to current UMKM
+          name,
+          slug: generatedSlug,
+          description,
+          createdAt: new Date().toISOString().substring(0, 10),
+        };
+        
+        const savedCategory = await storageService.saveCategory(newCatData);
+        
+        // Add to local state
+        setCategories(prev => [...prev, savedCategory]);
+        
+        console.log('✅ Category saved to database:', savedCategory);
+      }
 
-    setIsOpenModal(false);
+      setIsOpenModal(false);
+    } catch (err: any) {
+      console.error('❌ Error saving category:', err);
+      setError(err.message || 'Gagal menyimpan kategori. Cek koneksi database.');
+    }
   };
 
   const filteredCategories = categories.filter(

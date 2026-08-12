@@ -26,6 +26,7 @@ export interface User {
 // 2. Category Entity (mirrors categories MySQL table)
 export interface Category {
   id: number;
+  umkmPresetId?: number | string; // Link to UMKM for data isolation
   name: string;
   slug: string;
   description: string;
@@ -35,6 +36,7 @@ export interface Category {
 // 3. Product Entity (mirrors products MySQL table)
 export interface Product {
   id: number;
+  umkmPresetId?: number | string; // Link to UMKM for data isolation
   categoryId: number;
   name: string;
   slug: string;
@@ -50,6 +52,7 @@ export interface Product {
 // 4. Customer Entity (mirrors customers MySQL table)
 export interface Customer {
   id: number;
+  umkmPresetId?: number | string; // Link to UMKM for data isolation
   userId: number; // reference to users
   name: string;
   email: string;
@@ -63,6 +66,7 @@ export interface Customer {
 // 5. Transaction Entity (mirrors transactions MySQL table)
 export interface Transaction {
   id: number;
+  umkmPresetId?: number | string; // Link to UMKM for data isolation
   customerId: number;
   transactionCode: string;
   totalAmount: number;
@@ -107,6 +111,7 @@ export interface TransactionItem {
 // 7. Expense Entity (mirrors expenses MySQL table)
 export interface Expense {
   id: number;
+  umkmPresetId?: number | string; // Link to UMKM for data isolation
   expenseCategory: string; // gaji, tagihan, pembelian stok, dll
   description: string;
   amount: number;

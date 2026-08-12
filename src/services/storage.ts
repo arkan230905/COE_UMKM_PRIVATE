@@ -642,11 +642,21 @@ export class StorageService {
           totalAmount: typeof trans.total_amount === 'string' ? parseFloat(trans.total_amount) : trans.total_amount,
           paymentMethod: trans.payment_method || trans.paymentMethod,
           createdAt: trans.created_at || trans.createdAt,
-          isOffline: trans.is_offline !== undefined ? trans.is_offline : (trans.isOffline || false) // ✅ ADDED
+          isOffline: trans.is_offline !== undefined ? trans.is_offline : (trans.isOffline || false),
+          // ✅ MAP ITEMS from backend (transaction_items table with product relation)
+          items: trans.items?.map((item: any) => ({
+            productId: item.product_id || item.productId,
+            productName: item.product?.name || item.product_name || item.productName || 'Produk Tidak Diketahui',
+            categoryName: item.product?.category?.name || item.category_name || item.categoryName || '-',
+            quantity: item.quantity,
+            price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+            subtotal: typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : item.subtotal
+          })) || []
         }));
         
         console.log(`✅ Loaded ${mapped.length} transactions from backend for UMKM ${this.currentUmkmId || 'all'}`);
         console.log('📦 Sample mapped transaction:', mapped[0]);
+        console.log('📦 Sample items:', mapped[0]?.items);
         return mapped;
       } catch (error) {
         console.error('API Error, falling back to localStorage:', error);
@@ -670,6 +680,9 @@ export class StorageService {
           is_offline: transaction.isOffline || false, // ✅ ADDED
           items: transaction.items?.map(item => ({
             product_id: item.productId,
+            product_name: item.productName, // ✅ Send snapshot
+            product_description: item.productDescription, // ✅ Send snapshot (if available)
+            category_name: item.categoryName, // ✅ Send snapshot
             quantity: item.quantity,
             price: item.price,
             subtotal: item.subtotal
@@ -697,7 +710,16 @@ export class StorageService {
           totalAmount: typeof data.total_amount === 'string' ? parseFloat(data.total_amount) : data.total_amount,
           paymentMethod: data.payment_method || data.paymentMethod,
           createdAt: data.created_at || data.createdAt,
-          isOffline: data.is_offline !== undefined ? data.is_offline : data.isOffline
+          isOffline: data.is_offline !== undefined ? data.is_offline : data.isOffline,
+          // ✅ MAP ITEMS from backend response
+          items: data.items?.map((item: any) => ({
+            productId: item.product_id || item.productId,
+            productName: item.product?.name || item.product_name || item.productName || 'Produk Tidak Diketahui',
+            categoryName: item.product?.category?.name || item.category_name || item.categoryName || '-',
+            quantity: item.quantity,
+            price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+            subtotal: typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : item.subtotal
+          })) || []
         };
       } catch (error) {
         console.error('API Error:', error);

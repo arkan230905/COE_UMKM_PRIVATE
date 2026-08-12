@@ -58,6 +58,7 @@ class UmkmSeeder extends Seeder
             'stock' => 100,
             'image' => 'https://via.placeholder.com/200x200?text=Americano',
             'is_active' => true,
+            'barcode' => '8991234567001',
         ]);
 
         Product::create([
@@ -70,6 +71,7 @@ class UmkmSeeder extends Seeder
             'stock' => 100,
             'image' => 'https://via.placeholder.com/200x200?text=Cappuccino',
             'is_active' => true,
+            'barcode' => '8991234567002',
         ]);
 
         Product::create([
@@ -82,6 +84,7 @@ class UmkmSeeder extends Seeder
             'stock' => 50,
             'image' => 'https://via.placeholder.com/200x200?text=Croissant',
             'is_active' => true,
+            'barcode' => '8991234567003',
         ]);
 
         // Customer for Bistara
@@ -145,6 +148,7 @@ class UmkmSeeder extends Seeder
             'stock' => 15,
             'image' => 'https://via.placeholder.com/200x200?text=Samsung+A54',
             'is_active' => true,
+            'barcode' => '8991234567004',
         ]);
 
         Product::create([
@@ -157,6 +161,7 @@ class UmkmSeeder extends Seeder
             'stock' => 50,
             'image' => 'https://via.placeholder.com/200x200?text=Charger',
             'is_active' => true,
+            'barcode' => '8991234567005',
         ]);
 
         // Customer for Elektronik
