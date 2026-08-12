@@ -729,6 +729,26 @@ export class StorageService {
     return this.saveToLocalStorage<Transaction>('transactions', transaction);
   }
 
+  async updateTransactionStatus(id: number, status: string): Promise<void> {
+    if (this.useApi) {
+      try {
+        await apiService.updateTransactionStatus(id, status);
+        console.log(`✅ Transaction ${id} status updated to: ${status}`);
+      } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+      }
+    } else {
+      // localStorage fallback
+      const items = this.getFromLocalStorage<Transaction>('transactions');
+      const index = items.findIndex(item => item.id === id);
+      if (index === -1) throw new Error(`Transaction with id ${id} not found`);
+      
+      items[index] = { ...items[index], status: status as any };
+      localStorage.setItem('transactions', JSON.stringify(items));
+    }
+  }
+
   async deleteTransaction(id: number): Promise<void> {
     if (this.useApi) {
       try {

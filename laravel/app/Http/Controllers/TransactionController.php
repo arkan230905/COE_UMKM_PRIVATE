@@ -172,6 +172,7 @@ class TransactionController extends Controller
             IncomeRecord::updateOrCreate(
                 ['transaction_id' => $transaction->id],
                 [
+                    'umkm_preset_id' => $transaction->umkm_preset_id, // ✅ ADDED for multi-tenant isolation
                     'amount' => $transaction->total_amount,
                     'date' => now()->toDateString(),
                     'description' => 'Penjualan - ' . $transaction->transaction_code,

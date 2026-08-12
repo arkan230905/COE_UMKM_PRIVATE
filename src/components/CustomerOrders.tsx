@@ -3,6 +3,7 @@ import { ListOrdered, Search, Eye, FileText, CheckCircle2, Clock, XCircle, Shopp
 import { Transaction, Customer, UMKMPreset } from '../types';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
+import storageService from '../services/storage'; // ✅ ADDED
 
 interface CustomerOrdersProps {
   transactions: Transaction[];
@@ -521,31 +522,44 @@ export default function CustomerOrders({
               {selectedTx.shippingStatus !== 'Sampai Tujuan' && (
                 <button
                   type="button"
-                  onClick={() => {
+                  onClick={async () => {
                     const newShippingStatus = 'Sampai Tujuan';
                     const newStatus = 'completed';
-                    setTransactions(prev => {
-                      const updated = prev.map(t => {
-                        if (t.id === selectedTx.id) {
-                          return {
-                            ...t,
-                            shippingStatus: newShippingStatus,
-                            status: newStatus
-                          } as Transaction;
-                        }
-                        return t;
+                    
+                    try {
+                      console.log('📤 Updating transaction status to completed:', selectedTx.id);
+                      
+                      // ✅ UPDATE TO DATABASE via API
+                      await storageService.updateTransactionStatus(selectedTx.id, newStatus);
+                      
+                      console.log('✅ Transaction status updated in database');
+                      
+                      // Update local state
+                      setTransactions(prev => {
+                        return prev.map(t => {
+                          if (t.id === selectedTx.id) {
+                            return {
+                              ...t,
+                              shippingStatus: newShippingStatus,
+                              status: newStatus
+                            } as Transaction;
+                          }
+                          return t;
+                        });
                       });
-                      localStorage.setItem(`umkm_${currentPreset.id}_transactions`, JSON.stringify(updated));
-                      return updated;
-                    });
-                    
-                    setSelectedTx(prev => prev ? {
-                      ...prev,
-                      shippingStatus: newShippingStatus,
-                      status: newStatus
-                    } : null);
-                    
-                    alert('Terima kasih! Pesanan Anda telah berhasil dikonfirmasi sampai di tujuan.');
+                      
+                      // Update selected transaction for modal
+                      setSelectedTx(prev => prev ? {
+                        ...prev,
+                        shippingStatus: newShippingStatus,
+                        status: newStatus
+                      } : null);
+                      
+                      alert('✅ Terima kasih! Pesanan Anda telah berhasil dikonfirmasi sampai di tujuan dan tersimpan di database.');
+                    } catch (error: any) {
+                      console.error('❌ Error updating transaction status:', error);
+                      alert('❌ Gagal mengupdate status: ' + (error.message || 'Unknown error'));
+                    }
                   }}
                   className="w-full mt-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded-xl text-center cursor-pointer transition shadow-xs text-xs"
                 >
