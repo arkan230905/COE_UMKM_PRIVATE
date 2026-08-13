@@ -44,14 +44,20 @@ export default function CustomerOrders({
 
   // Print Invoice Function (same as CustomerCatalog)
   const handlePrintInvoice = (transaction: Transaction) => {
-    if (!transaction.items || transaction.items.length === 0) {
-      alert('Data item pembelian tidak tersedia untuk transaksi ini.');
-      return;
-    }
+    try {
+      console.log('🖨️ Starting PDF generation for transaction:', transaction.transactionCode);
+      
+      if (!transaction.items || transaction.items.length === 0) {
+        console.error('❌ No items found in transaction');
+        alert('Data item pembelian tidak tersedia untuk transaksi ini.');
+        return;
+      }
 
-    const doc = new jsPDF();
-    const pageWidth = doc.internal.pageSize.getWidth();
-    let yPosition = 20;
+      console.log('📦 Transaction items:', transaction.items);
+
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      let yPosition = 20;
 
     // Header with UMKM branding
     doc.setFillColor(30, 58, 95);
@@ -122,20 +128,20 @@ export default function CustomerOrders({
     doc.setFont('helvetica', 'bold');
     doc.text('Nama:', 14, yPosition);
     doc.setFont('helvetica', 'normal');
-    doc.text(currentUser.name, 45, yPosition);
+    doc.text(currentUser?.name || 'Customer', 45, yPosition);
     
     yPosition += 6;
     doc.setFont('helvetica', 'bold');
     doc.text('No. Telepon:', 14, yPosition);
     doc.setFont('helvetica', 'normal');
-    doc.text(currentUser.phone, 45, yPosition);
+    doc.text(currentUser?.phone || '-', 45, yPosition);
     
     if (transaction.requiresShipping) {
       yPosition += 6;
       doc.setFont('helvetica', 'bold');
       doc.text('Alamat Kirim:', 14, yPosition);
       doc.setFont('helvetica', 'normal');
-      const address = currentUser.address;
+      const address = currentUser?.address || '-';
       const splitAddress = doc.splitTextToSize(address, pageWidth - 60);
       doc.text(splitAddress, 45, yPosition);
       yPosition += (splitAddress.length - 1) * 5;
@@ -272,7 +278,13 @@ export default function CustomerOrders({
 
     // Save PDF
     const fileName = `Invoice-${transaction.transactionCode}-${currentPreset.businessName.replace(/\s+/g, '-')}.pdf`;
+    console.log('💾 Saving PDF with filename:', fileName);
     doc.save(fileName);
+    console.log('✅ PDF saved successfully!');
+    } catch (error: any) {
+      console.error('❌ Error generating PDF:', error);
+      alert('Gagal membuat PDF: ' + (error.message || 'Unknown error'));
+    }
   };
 
   // Only load transactions belonging to current logged in customer user
