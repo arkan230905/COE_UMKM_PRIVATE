@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ListOrdered, Search, Eye, FileText, CheckCircle2, Clock, XCircle, ShoppingBag, Landmark, AlertCircle } from 'lucide-react';
 import { Transaction, Customer, UMKMPreset } from '../types';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import storageService from '../services/storage'; // ✅ ADDED
 
 interface CustomerOrdersProps {
@@ -180,7 +180,7 @@ export default function CustomerOrders({
       ];
     });
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['No', 'Nama Produk', 'Kategori', 'Qty', 'Harga Satuan', 'Subtotal']],
       body: itemsData,

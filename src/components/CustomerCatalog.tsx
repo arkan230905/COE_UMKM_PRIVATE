@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ShoppingCart, Search, Filter, Plus, Minus, X, CheckSquare, Sparkles, MessageSquare, Compass, Phone, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { Product, Category, CartItem, PaymentMethod, Customer, Transaction, UMKMPreset, TransactionStatus } from '../types';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import storageService from '../services/storage';
 
 interface CustomerCatalogProps {
@@ -403,7 +403,7 @@ export default function CustomerCatalog({
       ];
     });
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: yPosition,
       head: [['No', 'Nama Produk', 'Kategori', 'Qty', 'Harga Satuan', 'Subtotal']],
       body: itemsData,
