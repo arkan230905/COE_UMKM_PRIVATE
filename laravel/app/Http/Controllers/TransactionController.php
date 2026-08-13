@@ -46,6 +46,7 @@ class TransactionController extends Controller
             'payment_method' => 'required|string',
             'notes' => 'nullable|string',
             'is_offline' => 'nullable|boolean', // ✅ ADDED
+            'booking_date' => 'nullable|date', // ✅ ADDED for booking transactions
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.product_name' => 'nullable|string', // ✅ ADDED snapshot field
@@ -87,6 +88,7 @@ class TransactionController extends Controller
                 'payment_method' => $validated['payment_method'],
                 'notes' => $validated['notes'] ?? null,
                 'is_offline' => $validated['is_offline'] ?? false, // ✅ ADDED
+                'booking_date' => $validated['booking_date'] ?? null, // ✅ ADDED for booking
             ]);
 
             // Create transaction items and update stock

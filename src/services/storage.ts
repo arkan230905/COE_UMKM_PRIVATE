@@ -643,6 +643,7 @@ export class StorageService {
           paymentMethod: trans.payment_method || trans.paymentMethod,
           createdAt: trans.created_at || trans.createdAt,
           isOffline: trans.is_offline !== undefined ? trans.is_offline : (trans.isOffline || false),
+          bookingDate: trans.booking_date || trans.bookingDate, // ✅ MAP booking_date
           // ✅ MAP ITEMS from backend (transaction_items table with product relation)
           items: trans.items?.map((item: any) => ({
             productId: item.product_id || item.productId,
@@ -678,6 +679,7 @@ export class StorageService {
           payment_method: transaction.paymentMethod,
           notes: transaction.notes,
           is_offline: transaction.isOffline || false, // ✅ ADDED
+          booking_date: transaction.bookingDate || null, // ✅ ADDED for booking
           items: transaction.items?.map(item => ({
             product_id: item.productId,
             product_name: item.productName, // ✅ Send snapshot
@@ -711,6 +713,7 @@ export class StorageService {
           paymentMethod: data.payment_method || data.paymentMethod,
           createdAt: data.created_at || data.createdAt,
           isOffline: data.is_offline !== undefined ? data.is_offline : data.isOffline,
+          bookingDate: data.booking_date || data.bookingDate, // ✅ MAP booking_date
           // ✅ MAP ITEMS from backend response
           items: data.items?.map((item: any) => ({
             productId: item.product_id || item.productId,

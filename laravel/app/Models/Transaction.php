@@ -20,7 +20,8 @@ class Transaction extends Model
         'is_offline', // ✅ ADDED
         'courier_name', // ✅ ADDED for shipping
         'tracking_number', // ✅ ADDED for shipping
-        'shipping_status' // ✅ ADDED for shipping
+        'shipping_status', // ✅ ADDED for shipping
+        'booking_date' // ✅ ADDED for booking transactions
     ];
 
     protected $casts = [
