@@ -45,6 +45,7 @@ Route::apiResource('customers', CustomerController::class);
 // Transaction Operations
 Route::apiResource('transactions', TransactionController::class);
 Route::put('transactions/{id}/status', [TransactionController::class, 'updateStatus']);
+Route::put('transactions/{id}/shipping', [TransactionController::class, 'updateShipping']); // ✅ ADDED
 
 // Financial Reports API
 Route::get('financial-reports', [FinancialReportController::class, 'index']);

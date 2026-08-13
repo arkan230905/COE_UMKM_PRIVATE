@@ -17,7 +17,10 @@ class Transaction extends Model
         'status',
         'payment_method',
         'notes',
-        'is_offline' // ✅ ADDED
+        'is_offline', // ✅ ADDED
+        'courier_name', // ✅ ADDED for shipping
+        'tracking_number', // ✅ ADDED for shipping
+        'shipping_status' // ✅ ADDED for shipping
     ];
 
     protected $casts = [

@@ -221,36 +221,64 @@ export default function AdminTransactions({
     setKasirPaymentMethod('Cash');
   };
 
-  const handleUpdateShipping = (e: React.FormEvent) => {
+  const handleUpdateShipping = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTx) return;
 
-    setTransactions(prev =>
-      prev.map(t =>
-        t.id === selectedTx.id
+    try {
+      console.log('📤 Updating shipping info to database:', {
+        transactionId: selectedTx.id,
+        courierName,
+        trackingNumber,
+        shippingStatus
+      });
+
+      // Determine new status (completed if delivered, otherwise keep current)
+      const newStatus = shippingStatus === 'Sampai Tujuan' ? 'completed' : selectedTx.status;
+
+      // ✅ SAVE TO DATABASE via API
+      await storageService.updateTransactionShipping(selectedTx.id, {
+        courierName,
+        trackingNumber,
+        shippingStatus,
+        status: newStatus
+      });
+
+      console.log('✅ Shipping info saved to database');
+
+      // Update local state
+      setTransactions(prev =>
+        prev.map(t =>
+          t.id === selectedTx.id
+            ? {
+                ...t,
+                courierName,
+                trackingNumber,
+                shippingStatus,
+                status: newStatus
+              }
+            : t
+        )
+      );
+
+      // Update selected transaction
+      setSelectedTx(prev =>
+        prev
           ? {
-              ...t,
+              ...prev,
               courierName,
               trackingNumber,
               shippingStatus,
-              status: shippingStatus === 'Sampai Tujuan' ? 'completed' : t.status
+              status: newStatus
             }
-          : t
-      )
-    );
+          : null
+      );
 
-    // Update locally too
-    setSelectedTx(prev =>
-      prev
-        ? {
-            ...prev,
-            courierName,
-            trackingNumber,
-            shippingStatus,
-            status: shippingStatus === 'Sampai Tujuan' ? 'completed' : prev.status
-          }
-        : null
-    );
+      alert('✅ Info pengiriman berhasil disimpan ke database!');
+    } catch (error: any) {
+      console.error('❌ Error updating shipping info:', error);
+      alert('❌ Gagal menyimpan info pengiriman: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const formatCurrency = (amount: number) => {

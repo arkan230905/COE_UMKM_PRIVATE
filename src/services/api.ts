@@ -188,6 +188,10 @@ class ApiService {
     return this.put(`/transactions/${id}/status`, { status });
   }
 
+  async updateTransactionShipping(id: number, shippingData: any) {
+    return this.put(`/transactions/${id}/shipping`, shippingData);
+  }
+
   async deleteTransaction(id: number) {
     return this.delete(`/transactions/${id}`);
   }

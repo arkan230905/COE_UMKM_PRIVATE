@@ -188,6 +188,45 @@ class TransactionController extends Controller
     }
 
     /**
+     * Update transaction shipping information.
+     */
+    public function updateShipping(Request $request, $id)
+    {
+        $transaction = Transaction::findOrFail($id);
+
+        $validated = $request->validate([
+            'courier_name' => 'nullable|string|max:255',
+            'tracking_number' => 'nullable|string|max:255',
+            'shipping_status' => 'nullable|string|in:Dalam Antrean,Sedang Dikemas,Sedang Dikirim,Sampai Tujuan',
+            'status' => 'nullable|string|in:pending,paid,completed,cancelled',
+        ]);
+
+        // Update shipping fields
+        $transaction->update($validated);
+
+        // If shipping status is "Sampai Tujuan" and transaction not yet completed
+        // Auto-create income record
+        if (isset($validated['status']) && $validated['status'] === 'completed' 
+            && !in_array($transaction->getOriginal('status'), ['completed', 'paid'])) {
+            IncomeRecord::updateOrCreate(
+                ['transaction_id' => $transaction->id],
+                [
+                    'umkm_preset_id' => $transaction->umkm_preset_id,
+                    'amount' => $transaction->total_amount,
+                    'date' => now()->toDateString(),
+                    'description' => 'Penjualan - ' . $transaction->transaction_code,
+                ]
+            );
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Info pengiriman berhasil diperbarui',
+            'data' => $transaction
+        ]);
+    }
+
+    /**
      * Remove the specified transaction from storage.
      */
     public function destroy($id)
