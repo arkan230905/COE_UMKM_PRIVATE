@@ -386,94 +386,124 @@ export default function CustomerOrders({
                 </div>
               </div>
 
-              {/* Shipping tracker stepper */}
-              <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 relative">
-                <span className="block font-bold text-[10px] uppercase text-indigo-600 dark:text-blue-400">
-                  Pelacakan Kondisi Barang / Posisi Kurir
-                </span>
-                
-                {/* Visual Tracker Line & Steps */}
-                <div className="flex items-center justify-between relative pt-2">
-                  {/* Background Bar */}
-                  <div className="absolute left-[8%] right-[8%] top-[18px] h-1 bg-slate-200 dark:bg-slate-700 z-0" />
-                  {/* Colored active path bar based on current step */}
-                  <div 
-                    className="absolute left-[8%] top-[18px] h-1 bg-emerald-500 z-0 transition-all duration-500"
-                    style={{
-                      width: 
-                        selectedTx.shippingStatus === 'Sampai Tujuan' ? '84%' :
-                        selectedTx.shippingStatus === 'Sedang Dikirim' ? '56%' :
-                        selectedTx.shippingStatus === 'Sedang Dikemas' ? '28%' : '0%'
-                    }}
-                  />
+              {/* Shipping tracker stepper - ONLY FOR SHIPPING TRANSACTIONS */}
+              {selectedTx.requiresShipping && !selectedTx.bookingDate && (
+                <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 relative">
+                  <span className="block font-bold text-[10px] uppercase text-indigo-600 dark:text-blue-400">
+                    Pelacakan Kondisi Barang / Posisi Kurir
+                  </span>
+                  
+                  {/* Visual Tracker Line & Steps */}
+                  <div className="flex items-center justify-between relative pt-2">
+                    {/* Background Bar */}
+                    <div className="absolute left-[8%] right-[8%] top-[18px] h-1 bg-slate-200 dark:bg-slate-700 z-0" />
+                    {/* Colored active path bar based on current step */}
+                    <div 
+                      className="absolute left-[8%] top-[18px] h-1 bg-emerald-500 z-0 transition-all duration-500"
+                      style={{
+                        width: 
+                          selectedTx.shippingStatus === 'Sampai Tujuan' ? '84%' :
+                          selectedTx.shippingStatus === 'Sedang Dikirim' ? '56%' :
+                          selectedTx.shippingStatus === 'Sedang Dikemas' ? '28%' : '0%'
+                      }}
+                    />
 
-                  {/* Step 1: Dipesan */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10">
-                    <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-emerald-500 text-white shadow-sm font-sans">1</div>
-                    <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Dipesan</span>
+                    {/* Step 1: Dipesan */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black bg-emerald-500 text-white shadow-sm font-sans">1</div>
+                      <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Dipesan</span>
+                    </div>
+
+                    {/* Step 2: Dikemas */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10">
+                      <div 
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm font-sans ${
+                          selectedTx.shippingStatus === 'Sedang Dikemas' || selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >2</div>
+                      <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Dikemas</span>
+                    </div>
+
+                    {/* Step 3: Dikirim */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10">
+                      <div 
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm font-sans ${
+                          selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >3</div>
+                      <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Dikirim</span>
+                    </div>
+
+                    {/* Step 4: Tiba */}
+                    <div className="flex flex-col items-center text-center space-y-1.5 z-10">
+                      <div 
+                        className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm font-sans ${
+                          selectedTx.shippingStatus === 'Sampai Tujuan'
+                            ? 'bg-emerald-500 text-white'
+                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
+                        }`}
+                      >4</div>
+                      <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Tiba</span>
+                    </div>
                   </div>
 
-                  {/* Step 2: Dikemas */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10">
-                    <div 
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm font-sans ${
-                        selectedTx.shippingStatus === 'Sedang Dikemas' || selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      }`}
-                    >2</div>
-                    <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Dikemas</span>
-                  </div>
-
-                  {/* Step 3: Dikirim */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10">
-                    <div 
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm font-sans ${
-                        selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      }`}
-                    >3</div>
-                    <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Dikirim</span>
-                  </div>
-
-                  {/* Step 4: Tiba */}
-                  <div className="flex flex-col items-center text-center space-y-1.5 z-10">
-                    <div 
-                      className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black shadow-sm font-sans ${
-                        selectedTx.shippingStatus === 'Sampai Tujuan'
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                      }`}
-                    >4</div>
-                    <span className="text-[9px] font-bold text-slate-800 dark:text-gray-200">Tiba</span>
+                  {/* Sub status details box */}
+                  <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-lg space-y-1 text-slate-650 dark:text-slate-350">
+                    <div className="flex justify-between font-bold text-[11px]">
+                      <span className="text-slate-500">Kondisi Pengiriman:</span>
+                      <span className="text-emerald-600 dark:text-emerald-450 uppercase">{selectedTx.shippingStatus || 'Dalam Antrean'}</span>
+                    </div>
+                    {selectedTx.courierName && (
+                      <div className="flex justify-between font-medium text-[11px]">
+                        <span className="text-slate-500">Expedisi / Kurir:</span>
+                        <span className="text-slate-850 dark:text-slate-100 font-bold">{selectedTx.courierName}</span>
+                      </div>
+                    )}
+                    {selectedTx.trackingNumber ? (
+                      <div className="flex justify-between font-medium text-[11px]">
+                        <span className="text-slate-500">Nomor Resi Pelacakan:</span>
+                        <span className="font-mono text-indigo-600 dark:text-blue-400 font-bold">{selectedTx.trackingNumber}</span>
+                      </div>
+                    ) : (
+                      <div className="text-[10px] text-slate-400 font-normal italic pt-1 text-center">
+                        Nomor resi atau kurir internal sedang diproses oleh admin toko.
+                      </div>
+                    )}
                   </div>
                 </div>
+              )}
 
-                {/* Sub status details box */}
-                <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-lg space-y-1 text-slate-650 dark:text-slate-350">
-                  <div className="flex justify-between font-bold text-[11px]">
-                    <span className="text-slate-500">Kondisi Pengiriman:</span>
-                    <span className="text-emerald-600 dark:text-emerald-450 uppercase">{selectedTx.shippingStatus || 'Dalam Antrean'}</span>
+              {/* Booking Date Info - FOR TICKET/BOOKING TRANSACTIONS */}
+              {selectedTx.bookingDate && (
+                <div className="p-4 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/30 dark:to-purple-950/30 rounded-xl border-2 border-indigo-200 dark:border-indigo-800 space-y-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-2xl">🎫</span>
+                    <span className="font-extrabold text-indigo-900 dark:text-indigo-300 text-sm uppercase tracking-wider">
+                      Tiket / Reservasi Booking
+                    </span>
                   </div>
-                  {selectedTx.courierName && (
-                    <div className="flex justify-between font-medium text-[11px]">
-                      <span className="text-slate-500">Expedisi / Kurir:</span>
-                      <span className="text-slate-850 dark:text-slate-100 font-bold">{selectedTx.courierName}</span>
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg border border-indigo-100 dark:border-indigo-900">
+                    <div className="flex justify-between items-center">
+                      <span className="text-slate-600 dark:text-slate-400 font-bold text-xs">Tanggal Booking:</span>
+                      <span className="text-indigo-700 dark:text-indigo-400 font-black text-base">
+                        {new Date(selectedTx.bookingDate).toLocaleDateString('id-ID', { 
+                          weekday: 'long',
+                          year: 'numeric', 
+                          month: 'long', 
+                          day: 'numeric'
+                        })}
+                      </span>
                     </div>
-                  )}
-                  {selectedTx.trackingNumber ? (
-                    <div className="flex justify-between font-medium text-[11px]">
-                      <span className="text-slate-500">Nomor Resi Pelacakan:</span>
-                      <span className="font-mono text-indigo-600 dark:text-blue-400 font-bold">{selectedTx.trackingNumber}</span>
-                    </div>
-                  ) : (
-                    <div className="text-[10px] text-slate-400 font-normal italic pt-1 text-center">
-                      Nomor resi atau kurir internal sedang diproses oleh admin toko.
-                    </div>
-                  )}
+                  </div>
+                  <div className="text-[10px] text-indigo-700 dark:text-indigo-400 text-center font-medium pt-1">
+                    💡 Tiket digital Anda akan dikirim via email. Simpan kode booking untuk check-in.
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Items Table container listing */}
               <div>
@@ -519,7 +549,8 @@ export default function CustomerOrders({
                 </span>
               </div>
 
-              {selectedTx.shippingStatus !== 'Sampai Tujuan' && (
+              {/* Confirmation Button - ONLY FOR SHIPPING TRANSACTIONS NOT YET COMPLETED */}
+              {selectedTx.requiresShipping && !selectedTx.bookingDate && selectedTx.shippingStatus !== 'Sampai Tujuan' && selectedTx.status !== 'completed' && (
                 <button
                   type="button"
                   onClick={async () => {
@@ -565,6 +596,19 @@ export default function CustomerOrders({
                 >
                   Konfirmasi Barang Sudah Sampai ✅
                 </button>
+              )}
+
+              {/* Info for Completed Bookings */}
+              {selectedTx.bookingDate && selectedTx.status === 'completed' && (
+                <div className="mt-4 p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800 text-center">
+                  <div className="text-emerald-700 dark:text-emerald-400 font-bold text-sm flex items-center justify-center gap-2">
+                    <CheckCircle2 size={18} />
+                    <span>Booking Terkonfirmasi</span>
+                  </div>
+                  <p className="text-[10px] text-emerald-600 dark:text-emerald-500 mt-1">
+                    Tiket Anda sudah siap! Check email untuk detail dan kode booking.
+                  </p>
+                </div>
               )}
             </div>
 

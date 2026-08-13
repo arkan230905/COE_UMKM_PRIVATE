@@ -166,8 +166,9 @@ export default function CustomerCatalog({
     }
 
     // Generate random transaction code TRX-XXXX
-    const randCode = 'TRX' + Math.floor(100 + Math.random() * 900);
+    const randCode = 'TRX' + Math.floor(100 + Math.random() + 900);
     const needsShipping = requiresShipping();
+    const needsBooking = requiresBookingDate();
 
     // Create items snapshot
     const itemsSnapshot = cart.map(item => {
@@ -189,8 +190,29 @@ export default function CustomerCatalog({
     console.log('Categories available:', categories);
     console.log('Items snapshot:', itemsSnapshot);
     console.log('Needs shipping:', needsShipping);
+    console.log('Needs booking:', needsBooking);
     console.log('Booking date:', bookingDate);
     console.log('=====================');
+
+    // ✅ DETERMINE INITIAL STATUS
+    // Tiket/booking products: immediately completed (no shipping needed)
+    // Shipping products: pending (wait for delivery confirmation)
+    // Digital/other: paid immediately
+    let initialStatus: 'pending' | 'paid' | 'completed' = 'paid';
+    
+    if (needsBooking) {
+      // Tiket/wisata/penginapan: langsung completed
+      initialStatus = 'completed';
+      console.log('🎫 Booking transaction: Status = completed (no shipping needed)');
+    } else if (needsShipping) {
+      // Makanan/minuman dengan pengiriman: pending until delivery
+      initialStatus = 'pending';
+      console.log('📦 Shipping transaction: Status = pending (wait for delivery)');
+    } else {
+      // Digital products or instant: paid immediately
+      initialStatus = 'paid';
+      console.log('💳 Digital transaction: Status = paid');
+    }
 
     // Create a new transaction data
     const newTransactionData = {
@@ -198,7 +220,7 @@ export default function CustomerCatalog({
       customerId: currentUser ? currentUser.id : 390, // linked to customer ID or walk-in
       transactionCode: randCode,
       totalAmount: totalCartAmount,
-      status: paymentMethod === 'Cash' ? 'pending' : 'paid', // Cash starts pending, others paid
+      status: initialStatus, // ✅ Status based on transaction type
       paymentMethod,
       notes: notes || 'Pemesanan katalog digital',
       createdAt: new Date().toISOString(),
@@ -207,7 +229,7 @@ export default function CustomerCatalog({
         courierName: 'J&T Express',
         trackingNumber: ''
       }),
-      ...(requiresBookingDate() && { bookingDate }),
+      ...(needsBooking && { bookingDate }),
       requiresShipping: needsShipping,
       items: itemsSnapshot
     };
