@@ -603,16 +603,16 @@ export default function AdminFinancialReport({
 
         {/* Total Expense */}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-2 relative overflow-hidden group">
-          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-bold uppercase tracking-wider block">Total Pengeluaran</span>
+          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-black uppercase tracking-wider block">Total Pengeluaran</span>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-extrabold text-rose-600 dark:text-rose-400 leading-tight">
+            <span className="text-3xl font-black text-rose-600 dark:text-rose-400 leading-tight">
               {formatCurrency(totalExpense)}
             </span>
             <div className="p-1 px-1.5 bg-rose-50 dark:bg-rose-950/30 text-rose-650 rounded text-[10px] font-bold flex items-center gap-1">
               <TrendingDown size={11} /> -4.2%
             </div>
           </div>
-          <span className="text-[11px] text-bento-text-muted dark:text-slate-500 block">Pembelian stok barang, upah staff, dan listrik air</span>
+          <span className="text-[11px] text-bento-text-muted dark:text-slate-500 block font-semibold">Pembelian stok barang, upah staff, dan listrik air</span>
           <div className="absolute right-4 bottom-4 w-9 h-9 opacity-10 text-rose-500">
             <TrendingDown size={36} />
           </div>
