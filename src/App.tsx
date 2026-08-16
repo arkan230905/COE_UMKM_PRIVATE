@@ -9,6 +9,7 @@ import AdminExpenses from './components/AdminExpenses';
 import AdminFinancialReport from './components/AdminFinancialReport';
 import CustomerCatalog from './components/CustomerCatalog';
 import CustomerOrders from './components/CustomerOrders';
+import CustomerShipping from './components/CustomerShipping';
 import SuperAdminWelcome from './components/SuperAdminWelcome';
 import AdminShipping from './components/AdminShipping';
 import CashierPOS from './components/CashierPOS';
@@ -173,7 +174,30 @@ export default function App() {
   };
   
   // Logged in customer user context (starts as null / guest!)
-  const [currentUser, setCurrentUser] = useState<Customer | null>(null);
+  // ✅ PERSIST TO LOCALSTORAGE - Prevent logout on refresh
+  const [currentUser, setCurrentUser] = useState<Customer | null>(() => {
+    const saved = localStorage.getItem('currentUser');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error parsing saved user:', e);
+        return null;
+      }
+    }
+    return null;
+  });
+
+  // ✅ SYNC TO LOCALSTORAGE whenever currentUser changes
+  React.useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('currentUser', JSON.stringify(currentUser));
+      console.log('✅ User persisted to localStorage:', currentUser.email);
+    } else {
+      localStorage.removeItem('currentUser');
+      console.log('✅ User removed from localStorage (logout)');
+    }
+  }, [currentUser]);
 
   // Customer Shopping basket
   const [cart, setCart] = useState<CartItem[]>([]);
@@ -226,7 +250,7 @@ export default function App() {
       }
       
       const adminMatch = path.match(/^\/admin\/([^/]+)\/([^/]+)/i);
-      const customerMatch = path.match(/^\/([^/]+)\/pelanggan\/(cattalog|catalog|order-history|riwayat-pesanan)/i);
+      const customerMatch = path.match(/^\/([^/]+)\/pelanggan\/(cattalog|catalog|order-history|riwayat-pesanan|shipping-tracking|pantau-pengiriman)/i);
       const kasirMatch = path.match(/^\/kasir\/([^/]+)/i);
       
       let matchedPreset: UMKMPreset | null = null;
@@ -480,6 +504,39 @@ export default function App() {
           />
         );
       }
+      
+      if (activeTab === 'shipping-tracking') {
+        if (!currentUser) {
+          return (
+            <div className="p-16 bg-white dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800 text-center space-y-4 max-w-md mx-auto my-12 shadow-md font-medium animate-fade-in relative border-t-4" style={{ borderTopColor: currentPreset.primaryColor }}>
+              <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 mx-auto text-lg font-bold">📦</div>
+              <div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">Pantau Pengiriman Terkunci</h3>
+                <p className="text-xs text-slate-400 mt-1 leading-normal">Silakan masuk atau daftarkan akun pembeli terlebih dahulu untuk melacak status pengiriman pesanan Anda.</p>
+              </div>
+              <button
+                onClick={() => {
+                  setAuthTab('login');
+                  setIsOpenAuthModal(true);
+                }}
+                className="px-4 py-2.5 text-white font-bold rounded-xl text-xs shadow-md cursor-pointer block w-full transition hover:scale-[1.01]"
+                style={{ backgroundColor: currentPreset.primaryColor }}
+              >
+                Masuk / Daftar Akun
+              </button>
+            </div>
+          );
+        }
+        return (
+          <CustomerShipping
+            transactions={transactions}
+            setTransactions={setTransactions}
+            currentUser={currentUser}
+            currentPreset={currentPreset}
+          />
+        );
+      }
+      
       return (
         <CustomerCatalog
           products={products}

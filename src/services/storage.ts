@@ -644,6 +644,11 @@ export class StorageService {
           createdAt: trans.created_at || trans.createdAt,
           isOffline: trans.is_offline !== undefined ? trans.is_offline : (trans.isOffline || false),
           bookingDate: trans.booking_date || trans.bookingDate, // ✅ MAP booking_date
+          // ✅ MAP SHIPPING FIELDS
+          courierName: trans.courier_name || trans.courierName,
+          trackingNumber: trans.tracking_number || trans.trackingNumber,
+          shippingStatus: trans.shipping_status || trans.shippingStatus,
+          requiresShipping: trans.requires_shipping !== undefined ? trans.requires_shipping : trans.requiresShipping,
           // ✅ MAP ITEMS from backend (transaction_items table with product relation)
           items: trans.items?.map((item: any) => ({
             productId: item.product_id || item.productId,
@@ -680,6 +685,7 @@ export class StorageService {
           notes: transaction.notes,
           is_offline: transaction.isOffline || false, // ✅ ADDED
           booking_date: transaction.bookingDate || null, // ✅ ADDED for booking
+          requires_shipping: transaction.requiresShipping || false, // ✅ ADDED for shipping flag
           items: transaction.items?.map(item => ({
             product_id: item.productId,
             product_name: item.productName, // ✅ Send snapshot
@@ -757,11 +763,47 @@ export class StorageService {
     trackingNumber?: string;
     shippingStatus?: string;
     status?: string;
-  }): Promise<void> {
+  }): Promise<Transaction> {
     if (this.useApi) {
       try {
-        await apiService.updateTransactionShipping(id, shippingData);
-        console.log(`✅ Transaction ${id} shipping info updated`);
+        // ✅ MAP camelCase to snake_case for Laravel API
+        const backendData: any = {};
+        if (shippingData.courierName !== undefined) backendData.courier_name = shippingData.courierName;
+        if (shippingData.trackingNumber !== undefined) backendData.tracking_number = shippingData.trackingNumber;
+        if (shippingData.shippingStatus !== undefined) backendData.shipping_status = shippingData.shippingStatus;
+        if (shippingData.status !== undefined) backendData.status = shippingData.status;
+        
+        console.log('📤 Sending to API (snake_case):', backendData);
+        
+        const response = await apiService.updateTransactionShipping(id, backendData);
+        const data = response.data as any;
+        
+        console.log('✅ Transaction shipping info updated in database:', data);
+        
+        // ✅ MAP response back to frontend format
+        return {
+          ...data,
+          umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
+          customerId: data.customer_id || data.customerId,
+          transactionCode: data.transaction_code || data.transactionCode,
+          totalAmount: typeof data.total_amount === 'string' ? parseFloat(data.total_amount) : data.total_amount,
+          paymentMethod: data.payment_method || data.paymentMethod,
+          createdAt: data.created_at || data.createdAt,
+          isOffline: data.is_offline !== undefined ? data.is_offline : data.isOffline,
+          bookingDate: data.booking_date || data.bookingDate,
+          courierName: data.courier_name || data.courierName,
+          trackingNumber: data.tracking_number || data.trackingNumber,
+          shippingStatus: data.shipping_status || data.shippingStatus,
+          requiresShipping: data.requires_shipping !== undefined ? data.requires_shipping : data.requiresShipping,
+          items: data.items?.map((item: any) => ({
+            productId: item.product_id || item.productId,
+            productName: item.product?.name || item.product_name || item.productName || 'Produk Tidak Diketahui',
+            categoryName: item.product?.category?.name || item.category_name || item.categoryName || '-',
+            quantity: item.quantity,
+            price: typeof item.price === 'string' ? parseFloat(item.price) : item.price,
+            subtotal: typeof item.subtotal === 'string' ? parseFloat(item.subtotal) : item.subtotal
+          })) || []
+        };
       } catch (error) {
         console.error('API Error:', error);
         throw error;
@@ -774,6 +816,7 @@ export class StorageService {
       
       items[index] = { ...items[index], ...shippingData };
       localStorage.setItem('transactions', JSON.stringify(items));
+      return items[index];
     }
   }
 

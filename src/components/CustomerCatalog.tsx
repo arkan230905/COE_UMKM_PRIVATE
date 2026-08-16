@@ -172,8 +172,10 @@ export default function CustomerCatalog({
       return;
     }
 
-    // Generate random transaction code TRX-XXXX
-    const randCode = 'TRX' + Math.floor(100 + Math.random() + 900);
+    // Generate unique transaction code with timestamp
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    const randCode = `TRX${timestamp}${random}`;
     const needsShipping = requiresShipping();
     const needsBooking = requiresBookingDate();
 

@@ -21,12 +21,14 @@ class Transaction extends Model
         'courier_name', // ✅ ADDED for shipping
         'tracking_number', // ✅ ADDED for shipping
         'shipping_status', // ✅ ADDED for shipping
+        'requires_shipping', // ✅ ADDED for shipping flag
         'booking_date' // ✅ ADDED for booking transactions
     ];
 
     protected $casts = [
         'total_amount' => 'float', // ✅ Changed from decimal:2 to float
-        'is_offline' => 'boolean'
+        'is_offline' => 'boolean',
+        'requires_shipping' => 'boolean' // ✅ ADDED for shipping flag
     ];
 
     /**

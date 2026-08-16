@@ -1,6 +1,7 @@
  import React, { useState } from 'react';
 import { Truck, Search, CheckCircle2, Package, MapPin, Phone, MessageSquare, AlertCircle, Info, ExternalLink } from 'lucide-react';
 import { Transaction, Customer, UMKMPreset } from '../types';
+import storageService from '../services/storage';
 
 interface AdminShippingProps {
   transactions: Transaction[];
@@ -72,30 +73,42 @@ export default function AdminShipping({
   const statInTransit = shippingTransactions.filter(t => t.shippingStatus === 'Sedang Dikirim').length;
   const statDelivered = shippingTransactions.filter(t => t.shippingStatus === 'Sampai Tujuan').length;
 
-  const handleUpdateShipping = (e: React.FormEvent) => {
+  const handleUpdateShipping = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTx) return;
 
-    const newStatus = shippingStatus;
-
-    setTransactions(prev => {
-      const updated = prev.map(t => {
-        if (t.id === selectedTx.id) {
-          return {
-            ...t,
-            shippingStatus: newStatus,
-            courierName: courierName || t.courierName,
-            trackingNumber: trackingNumber || t.trackingNumber
-          } as Transaction;
-        }
-        return t;
+    try {
+      console.log('📤 Updating shipping info to database:', {
+        transactionId: selectedTx.id,
+        courierName,
+        trackingNumber,
+        shippingStatus
       });
-      localStorage.setItem(`umkm_${currentPreset.id}_transactions`, JSON.stringify(updated));
-      return updated;
-    });
 
-    alert(`Informasi pengiriman untuk ${selectedTx.transactionCode} berhasil diperbarui!`);
-    setSelectedTx(null);
+      // Determine new transaction status (completed if delivered, otherwise keep current)
+      const newTransactionStatus = shippingStatus === 'Sampai Tujuan' ? 'completed' : selectedTx.status;
+
+      // ✅ SAVE TO DATABASE via API - returns updated transaction
+      const updatedTransaction = await storageService.updateTransactionShipping(selectedTx.id, {
+        courierName,
+        trackingNumber,
+        shippingStatus,
+        status: newTransactionStatus
+      });
+
+      console.log('✅ Shipping info saved to database, updated transaction:', updatedTransaction);
+
+      // ✅ RELOAD ALL TRANSACTIONS FROM DATABASE to get fresh data
+      const freshTransactions = await storageService.getTransactions();
+      setTransactions(freshTransactions);
+      console.log('✅ All transactions reloaded from database');
+
+      alert(`✅ Informasi pengiriman untuk ${selectedTx.transactionCode} berhasil disimpan ke database!`);
+      setSelectedTx(null);
+    } catch (error: any) {
+      console.error('❌ Error updating shipping info:', error);
+      alert('❌ Gagal menyimpan info pengiriman: ' + (error.message || 'Unknown error'));
+    }
   };
 
   const handleOpenEdit = (tx: Transaction) => {

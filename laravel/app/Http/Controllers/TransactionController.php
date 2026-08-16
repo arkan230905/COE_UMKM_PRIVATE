@@ -17,7 +17,7 @@ class TransactionController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Transaction::with(['customer', 'items.product']);
+        $query = Transaction::with(['customer', 'items.product.category']);
         
         // Filter by umkm_preset_id if provided
         if ($request->has('umkm_preset_id')) {
@@ -47,6 +47,7 @@ class TransactionController extends Controller
             'notes' => 'nullable|string',
             'is_offline' => 'nullable|boolean', // ✅ ADDED
             'booking_date' => 'nullable|date', // ✅ ADDED for booking transactions
+            'requires_shipping' => 'nullable|boolean', // ✅ ADDED for shipping flag
             'items' => 'required|array|min:1',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.product_name' => 'nullable|string', // ✅ ADDED snapshot field
@@ -89,6 +90,7 @@ class TransactionController extends Controller
                 'notes' => $validated['notes'] ?? null,
                 'is_offline' => $validated['is_offline'] ?? false, // ✅ ADDED
                 'booking_date' => $validated['booking_date'] ?? null, // ✅ ADDED for booking
+                'requires_shipping' => $validated['requires_shipping'] ?? false, // ✅ ADDED for shipping flag
             ]);
 
             // Create transaction items and update stock
@@ -220,6 +222,9 @@ class TransactionController extends Controller
                 ]
             );
         }
+
+        // ✅ Reload transaction with relationships to return fresh data
+        $transaction->load(['customer', 'items.product.category']);
 
         return response()->json([
             'status' => 'success',

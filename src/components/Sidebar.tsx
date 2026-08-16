@@ -263,6 +263,22 @@ export default function Sidebar({
                   <ListOrdered size={18} />
                   {!isCollapsed && <span>Riwayat Pesanan</span>}
                 </button>
+
+                {/* 4. Pantau Pengiriman */}
+                <button
+                  onClick={() => {
+                    setActiveTab('shipping-tracking');
+                    if (setIsOpenCart) setIsOpenCart(false);
+                  }}
+                  className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all group cursor-pointer ${
+                    activeTab === 'shipping-tracking'
+                      ? 'bg-[#1E3A5F] text-white shadow-md'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/40'
+                  }`}
+                >
+                  <Truck size={18} />
+                  {!isCollapsed && <span>Pantau Pengiriman</span>}
+                </button>
               </div>
             </div>
 

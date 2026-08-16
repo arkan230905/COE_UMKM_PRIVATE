@@ -36,19 +36,6 @@ export default function AdminTransactions({
   const [kasirPaymentMethod, setKasirPaymentMethod] = useState<'Cash' | 'E-Wallet' | 'Debit Card' | 'QRIS'>('Cash');
   const [kasirNotes, setKasirNotes] = useState('');
 
-  // Shipping details management states
-  const [courierName, setCourierName] = useState('J&T Express');
-  const [trackingNumber, setTrackingNumber] = useState('');
-  const [shippingStatus, setShippingStatus] = useState<'Dalam Antrean' | 'Sedang Dikemas' | 'Sedang Dikirim' | 'Sampai Tujuan'>('Dalam Antrean');
-
-  React.useEffect(() => {
-    if (selectedTx) {
-      setCourierName(selectedTx.courierName || 'J&T Express');
-      setTrackingNumber(selectedTx.trackingNumber || '');
-      setShippingStatus(selectedTx.shippingStatus || 'Dalam Antrean');
-    }
-  }, [selectedTx]);
-
   // Log products when kasir modal opens
   React.useEffect(() => {
     if (showKasirModal) {
@@ -221,66 +208,6 @@ export default function AdminTransactions({
     setKasirPaymentMethod('Cash');
   };
 
-  const handleUpdateShipping = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTx) return;
-
-    try {
-      console.log('📤 Updating shipping info to database:', {
-        transactionId: selectedTx.id,
-        courierName,
-        trackingNumber,
-        shippingStatus
-      });
-
-      // Determine new status (completed if delivered, otherwise keep current)
-      const newStatus = shippingStatus === 'Sampai Tujuan' ? 'completed' : selectedTx.status;
-
-      // ✅ SAVE TO DATABASE via API
-      await storageService.updateTransactionShipping(selectedTx.id, {
-        courierName,
-        trackingNumber,
-        shippingStatus,
-        status: newStatus
-      });
-
-      console.log('✅ Shipping info saved to database');
-
-      // Update local state
-      setTransactions(prev =>
-        prev.map(t =>
-          t.id === selectedTx.id
-            ? {
-                ...t,
-                courierName,
-                trackingNumber,
-                shippingStatus,
-                status: newStatus
-              }
-            : t
-        )
-      );
-
-      // Update selected transaction
-      setSelectedTx(prev =>
-        prev
-          ? {
-              ...prev,
-              courierName,
-              trackingNumber,
-              shippingStatus,
-              status: newStatus
-            }
-          : null
-      );
-
-      alert('✅ Info pengiriman berhasil disimpan ke database!');
-    } catch (error: any) {
-      console.error('❌ Error updating shipping info:', error);
-      alert('❌ Gagal menyimpan info pengiriman: ' + (error.message || 'Unknown error'));
-    }
-  };
-
   const formatCurrency = (amount: number) => {
     if (currentPreset.currency === '$') {
       return `$${amount.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
@@ -288,13 +215,58 @@ export default function AdminTransactions({
     return `Rp ${amount.toLocaleString('id-ID')}`;
   };
 
-  const updateStatus = (id: number, newStatus: TransactionStatus) => {
-    setTransactions(prev =>
-      prev.map(t => (t.id === id ? { ...t, status: newStatus } : t))
-    );
-    // If selected tx, refresh its details state
-    if (selectedTx && selectedTx.id === id) {
-      setSelectedTx(prev => (prev ? { ...prev, status: newStatus } : null));
+  const isStatusLocked = (status: TransactionStatus): boolean => {
+    // Status is locked if it's completed or cancelled
+    return status === 'completed' || status === 'cancelled';
+  };
+
+  const updateStatus = async (id: number, newStatus: TransactionStatus) => {
+    // Find the transaction to check current status
+    const transaction = transactions.find(t => t.id === id);
+    if (!transaction) {
+      alert('❌ Transaksi tidak ditemukan');
+      return;
+    }
+
+    // Check if current status is locked
+    if (isStatusLocked(transaction.status)) {
+      alert('⚠️ Status transaksi ini sudah terkunci dan tidak bisa diubah lagi.\n\nStatus "Selesai" dan "Dibatalkan" bersifat permanen.');
+      return;
+    }
+
+    // Confirm if changing to a locked status
+    if (isStatusLocked(newStatus)) {
+      const statusText = newStatus === 'completed' ? 'Selesai' : 'Dibatalkan';
+      const confirmMsg = `⚠️ KONFIRMASI PERUBAHAN STATUS\n\nAnda akan mengubah status ke "${statusText}".\nStatus ini PERMANEN dan tidak bisa diubah lagi setelah dikonfirmasi.\n\nLanjutkan?`;
+      
+      if (!confirm(confirmMsg)) {
+        return; // User cancelled
+      }
+    }
+
+    try {
+      console.log(`📤 Updating transaction ${id} status to: ${newStatus}`);
+      
+      // ✅ SAVE TO DATABASE via API
+      await storageService.updateTransactionStatus(id, newStatus);
+      
+      console.log('✅ Transaction status updated in database');
+      
+      // Update local state
+      setTransactions(prev =>
+        prev.map(t => (t.id === id ? { ...t, status: newStatus } : t))
+      );
+      
+      // If selected tx, refresh its details state
+      if (selectedTx && selectedTx.id === id) {
+        setSelectedTx(prev => (prev ? { ...prev, status: newStatus } : null));
+      }
+      
+      const lockMsg = isStatusLocked(newStatus) ? '\n🔒 Status ini sekarang terkunci dan tidak bisa diubah lagi.' : '';
+      alert(`✅ Status transaksi berhasil diubah ke: ${newStatus}${lockMsg}`);
+    } catch (error: any) {
+      console.error('❌ Error updating status:', error);
+      alert('❌ Gagal mengubah status: ' + (error.message || 'Unknown error'));
     }
   };
 
@@ -501,16 +473,22 @@ export default function AdminTransactions({
                       {/* Dropdown status toggler or view invoice */}
                       <td className="px-6 py-4 text-center">
                         <div className="flex items-center justify-center gap-2">
-                          <select
-                            value={tx.status}
-                            onChange={(e) => updateStatus(tx.id, e.target.value as TransactionStatus)}
-                            className="text-[10px] px-1.5 py-1 rounded bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
-                          >
-                            <option value="pending">Menunggu</option>
-                            <option value="paid">Dibayar</option>
-                            <option value="completed">Selesai</option>
-                            <option value="cancelled">Batal</option>
-                          </select>
+                          {isStatusLocked(tx.status) ? (
+                            <div className="flex items-center gap-1.5 px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700">
+                              <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">🔒 Terkunci</span>
+                            </div>
+                          ) : (
+                            <select
+                              value={tx.status}
+                              onChange={(e) => updateStatus(tx.id, e.target.value as TransactionStatus)}
+                              className="text-[10px] px-1.5 py-1 rounded bg-slate-50 dark:bg-slate-800 border border-slate-150 dark:border-slate-700 text-slate-700 dark:text-slate-200 cursor-pointer"
+                            >
+                              <option value="pending">Menunggu</option>
+                              <option value="paid">Dibayar</option>
+                              <option value="completed">Selesai</option>
+                              <option value="cancelled">Batal</option>
+                            </select>
+                          )}
                           <button
                             onClick={() => setSelectedTx(tx)}
                             className="p-1 px-2.5 bg-slate-100 hover:bg-slate-250 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 rounded-md cursor-pointer text-[10px] font-bold inline-flex items-center gap-0.5"
@@ -574,106 +552,38 @@ export default function AdminTransactions({
               </div>
 
               {/* Status Action controls inside modal */}
-              <div className="p-3 bg-indigo-50/40 dark:bg-slate-850 rounded-xl border border-indigo-100/30 flex items-center justify-between">
-                <span className="text-slate-600 dark:text-slate-350">Ubah Status Cepat:</span>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => updateStatus(selectedTx.id, 'paid')}
-                    className="px-2.5 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px] font-bold cursor-pointer"
-                  >
-                    Set Lunas
-                  </button>
-                  <button
-                    onClick={() => updateStatus(selectedTx.id, 'completed')}
-                    className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded text-[10px] font-bold cursor-pointer"
-                  >
-                    Set Selesai
-                  </button>
-                  <button
-                    onClick={() => updateStatus(selectedTx.id, 'cancelled')}
-                    className="px-2.5 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded text-[10px] font-bold cursor-pointer"
-                  >
-                    Set Batalkan
-                  </button>
-                </div>
+              <div className="p-3 bg-indigo-50/40 dark:bg-slate-850 rounded-xl border border-indigo-100/30">
+                {isStatusLocked(selectedTx.status) ? (
+                  <div className="flex items-center justify-center gap-2 py-2">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">🔒 Status Terkunci</span>
+                    <span className="text-[10px] text-slate-400">Status ini tidak dapat diubah lagi</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 dark:text-slate-350">Ubah Status Cepat:</span>
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={() => updateStatus(selectedTx.id, 'paid')}
+                        className="px-2.5 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded text-[10px] font-bold cursor-pointer"
+                      >
+                        Set Lunas
+                      </button>
+                      <button
+                        onClick={() => updateStatus(selectedTx.id, 'completed')}
+                        className="px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded text-[10px] font-bold cursor-pointer"
+                      >
+                        Set Selesai
+                      </button>
+                      <button
+                        onClick={() => updateStatus(selectedTx.id, 'cancelled')}
+                        className="px-2.5 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded text-[10px] font-bold cursor-pointer"
+                      >
+                        Set Batalkan
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-
-              {/* Shipping & Delivery Tracker - ONLY FOR ONLINE TRANSACTIONS */}
-              {!selectedTx.isOffline && (
-                <div className="p-4 bg-slate-50 dark:bg-slate-850 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3.5 relative">
-                  <span className="block font-bold text-[10px] uppercase text-indigo-600 dark:text-blue-400">
-                    Status Pengiriman Barang (Penerimaan Pelanggan)
-                  </span>
-                  
-                  {/* Visual Tracker Line & Steps */}
-                  <div className="flex items-center justify-between relative pt-2">
-                    <div className="absolute left-[8%] right-[8%] top-[18px] h-1 bg-slate-200 dark:bg-slate-700 z-0" />
-                    <div 
-                      className="absolute left-[8%] top-[18px] h-1 bg-emerald-500 z-0 transition-all duration-500"
-                      style={{
-                        width: 
-                          selectedTx.shippingStatus === 'Sampai Tujuan' ? '84%' :
-                          selectedTx.shippingStatus === 'Sedang Dikirim' ? '56%' :
-                          selectedTx.shippingStatus === 'Sedang Dikemas' ? '28%' : '0%'
-                      }}
-                    />
-
-                    {/* Step 1: Dipesan */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black bg-emerald-500 text-white shadow-xs">1</div>
-                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dipesan</span>
-                    </div>
-
-                    {/* Step 2: Dikemas */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                      <div 
-                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
-                          selectedTx.shippingStatus === 'Sedang Dikemas' || selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                        }`}
-                      >2</div>
-                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dikemas</span>
-                    </div>
-
-                    {/* Step 3: Dikirim */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                      <div 
-                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
-                          selectedTx.shippingStatus === 'Sedang Dikirim' || selectedTx.shippingStatus === 'Sampai Tujuan'
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                        }`}
-                      >3</div>
-                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Dikirim</span>
-                    </div>
-
-                    {/* Step 4: Tiba */}
-                    <div className="flex flex-col items-center text-center space-y-1.5 z-10 font-medium">
-                      <div 
-                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shadow-xs ${
-                          selectedTx.shippingStatus === 'Sampai Tujuan'
-                            ? 'bg-emerald-500 text-white'
-                            : 'bg-slate-200 text-slate-500 dark:bg-slate-800 dark:text-slate-400'
-                        }`}
-                      >4</div>
-                      <span className="text-[9px] font-bold text-slate-500 dark:text-gray-400">Tiba</span>
-                    </div>
-                  </div>
-
-                  <div className="p-3 bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 rounded-lg text-slate-650 dark:text-slate-350 select-none">
-                    <div className="flex justify-between font-bold text-[11px]">
-                      <span>Status Lokasi / Kondisi:</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 uppercase font-black">
-                        {selectedTx.shippingStatus || 'Dalam Antrean'}
-                      </span>
-                    </div>
-                    <div className="text-[10px] text-slate-400 font-normal italic pt-1.5 text-center leading-normal">
-                      💡 Status ini hanya dapat diubah menjadi "Sampai Tujuan" oleh konfirmasi langsung pelanggan via portal pelanggan mereka.
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* OFFLINE TRANSACTION INFO */}
               {selectedTx.isOffline && (
