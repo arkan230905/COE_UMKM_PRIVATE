@@ -854,9 +854,13 @@ export class StorageService {
           umkmPresetId: exp.umkm_preset_id || exp.umkmPresetId,
           expenseCategory: exp.expense_category || exp.expenseCategory,
           materialName: exp.material_name || exp.materialName,
-          pricePerUnit: exp.price_per_unit || exp.pricePerUnit,
-          shippingCost: exp.shipping_cost || exp.shippingCost,
-          ppnPercent: exp.ppn_percent || exp.ppnPercent,
+          // ✅ PARSE ALL NUMERIC FIELDS to ensure proper number type
+          amount: typeof exp.amount === 'string' ? parseFloat(exp.amount) : exp.amount,
+          quantity: typeof exp.quantity === 'string' ? parseInt(exp.quantity) : exp.quantity,
+          pricePerUnit: typeof exp.price_per_unit === 'string' ? parseFloat(exp.price_per_unit) : (exp.price_per_unit || exp.pricePerUnit),
+          shippingCost: typeof exp.shipping_cost === 'string' ? parseFloat(exp.shipping_cost) : (exp.shipping_cost || exp.shippingCost),
+          discount: typeof exp.discount === 'string' ? parseFloat(exp.discount) : exp.discount,
+          ppnPercent: typeof exp.ppn_percent === 'string' ? parseFloat(exp.ppn_percent) : (exp.ppn_percent || exp.ppnPercent),
           createdAt: exp.created_at || exp.createdAt
         }));
         
@@ -899,9 +903,13 @@ export class StorageService {
           umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
           expenseCategory: data.expense_category || data.expenseCategory,
           materialName: data.material_name || data.materialName,
-          pricePerUnit: data.price_per_unit || data.pricePerUnit,
-          shippingCost: data.shipping_cost || data.shippingCost,
-          ppnPercent: data.ppn_percent || data.ppnPercent,
+          // ✅ PARSE ALL NUMERIC FIELDS
+          amount: typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount,
+          quantity: typeof data.quantity === 'string' ? parseInt(data.quantity) : data.quantity,
+          pricePerUnit: typeof data.price_per_unit === 'string' ? parseFloat(data.price_per_unit) : (data.price_per_unit || data.pricePerUnit),
+          shippingCost: typeof data.shipping_cost === 'string' ? parseFloat(data.shipping_cost) : (data.shipping_cost || data.shippingCost),
+          discount: typeof data.discount === 'string' ? parseFloat(data.discount) : data.discount,
+          ppnPercent: typeof data.ppn_percent === 'string' ? parseFloat(data.ppn_percent) : (data.ppn_percent || data.ppnPercent),
           createdAt: data.created_at || data.createdAt
         };
       } catch (error) {
@@ -940,9 +948,13 @@ export class StorageService {
           umkmPresetId: data.umkm_preset_id || data.umkmPresetId,
           expenseCategory: data.expense_category || data.expenseCategory,
           materialName: data.material_name || data.materialName,
-          pricePerUnit: data.price_per_unit || data.pricePerUnit,
-          shippingCost: data.shipping_cost || data.shippingCost,
-          ppnPercent: data.ppn_percent || data.ppnPercent,
+          // ✅ PARSE ALL NUMERIC FIELDS
+          amount: typeof data.amount === 'string' ? parseFloat(data.amount) : data.amount,
+          quantity: typeof data.quantity === 'string' ? parseInt(data.quantity) : data.quantity,
+          pricePerUnit: typeof data.price_per_unit === 'string' ? parseFloat(data.price_per_unit) : (data.price_per_unit || data.pricePerUnit),
+          shippingCost: typeof data.shipping_cost === 'string' ? parseFloat(data.shipping_cost) : (data.shipping_cost || data.shippingCost),
+          discount: typeof data.discount === 'string' ? parseFloat(data.discount) : data.discount,
+          ppnPercent: typeof data.ppn_percent === 'string' ? parseFloat(data.ppn_percent) : (data.ppn_percent || data.ppnPercent),
           createdAt: data.created_at || data.createdAt
         };
       } catch (error) {
