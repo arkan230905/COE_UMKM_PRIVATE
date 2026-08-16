@@ -140,12 +140,7 @@ export default function AdminFinancialReport({
       
       console.log('📄 Creating PDF document...');
       
-      // Import jsPDF fresh to ensure autoTable is attached
-      const { default: jsPDF } = await import('jspdf');
-      await import('jspdf-autotable');
-      
-      console.log('✅ jsPDF and autoTable loaded');
-      
+      // Use jsPDF from top-level import (already loaded with autoTable)
       const doc = new jsPDF() as any;
       
       // Verify autoTable is available
