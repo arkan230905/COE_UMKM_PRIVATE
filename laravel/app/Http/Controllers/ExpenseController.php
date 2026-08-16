@@ -34,9 +34,9 @@ class ExpenseController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'umkm_preset_id' => 'required|exists:umkm_presets,id', // Changed from umkmPresetId
+            'umkm_preset_id' => 'required|exists:umkm_presets,id',
             'expense_category' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string', // ✅ CHANGED: nullable for stock purchases
             'amount' => 'required|numeric|min:0',
             'date' => 'required|date',
             'notes' => 'nullable|string',
@@ -54,10 +54,21 @@ class ExpenseController extends Controller
             'ppnPercent' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        // ✅ Use material_name as description for stock purchases if description is empty
+        $description = $validated['description'];
+        if (empty($description)) {
+            $materialName = $validated['material_name'] ?? $validated['materialName'] ?? null;
+            if ($materialName) {
+                $description = 'Pembelian: ' . $materialName;
+            } else {
+                $description = 'Pengeluaran ' . $validated['expense_category'];
+            }
+        }
+
         $data = [
             'umkm_preset_id' => $validated['umkm_preset_id'],
             'expense_category' => $validated['expense_category'],
-            'description' => $validated['description'],
+            'description' => $description, // ✅ Auto-generate if empty
             'amount' => $validated['amount'],
             'date' => $validated['date'],
             'notes' => $validated['notes'] ?? null,
@@ -100,7 +111,7 @@ class ExpenseController extends Controller
 
         $validated = $request->validate([
             'expense_category' => 'required|string|max:255',
-            'description' => 'required|string',
+            'description' => 'nullable|string', // ✅ CHANGED: nullable
             'amount' => 'required|numeric|min:0',
             'date' => 'required|date',
             'notes' => 'nullable|string',
@@ -118,9 +129,20 @@ class ExpenseController extends Controller
             'ppnPercent' => 'nullable|numeric|min:0|max:100',
         ]);
 
+        // ✅ Use material_name as description for stock purchases if description is empty
+        $description = $validated['description'];
+        if (empty($description)) {
+            $materialName = $validated['material_name'] ?? $validated['materialName'] ?? null;
+            if ($materialName) {
+                $description = 'Pembelian: ' . $materialName;
+            } else {
+                $description = 'Pengeluaran ' . $validated['expense_category'];
+            }
+        }
+
         $data = [
             'expense_category' => $validated['expense_category'],
-            'description' => $validated['description'],
+            'description' => $description, // ✅ Auto-generate if empty
             'amount' => $validated['amount'],
             'date' => $validated['date'],
             'notes' => $validated['notes'] ?? null,
