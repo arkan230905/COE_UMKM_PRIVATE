@@ -13,12 +13,25 @@ class Expense extends Model
         'description',
         'amount',
         'date',
-        'notes'
+        'notes',
+        // ✅ ADDED: Fields for "Pembelian Stok" category
+        'material_name',
+        'quantity',
+        'unit',
+        'price_per_unit',
+        'shipping_cost',
+        'discount',
+        'ppn_percent'
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
-        'date' => 'date'
+        'price_per_unit' => 'decimal:2',
+        'shipping_cost' => 'decimal:2',
+        'discount' => 'decimal:2',
+        'ppn_percent' => 'decimal:2',
+        'date' => 'date',
+        'quantity' => 'integer'
     ];
 
     /**

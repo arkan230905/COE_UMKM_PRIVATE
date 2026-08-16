@@ -104,9 +104,36 @@ class ExpenseController extends Controller
             'amount' => 'required|numeric|min:0',
             'date' => 'required|date',
             'notes' => 'nullable|string',
+            // Optional fields for "Pembelian Stok" - accept both camelCase and snake_case
+            'material_name' => 'nullable|string|max:255',
+            'materialName' => 'nullable|string|max:255',
+            'quantity' => 'nullable|numeric|min:0',
+            'unit' => 'nullable|string|max:50',
+            'price_per_unit' => 'nullable|numeric|min:0',
+            'pricePerUnit' => 'nullable|numeric|min:0',
+            'shipping_cost' => 'nullable|numeric|min:0',
+            'shippingCost' => 'nullable|numeric|min:0',
+            'discount' => 'nullable|numeric|min:0',
+            'ppn_percent' => 'nullable|numeric|min:0|max:100',
+            'ppnPercent' => 'nullable|numeric|min:0|max:100',
         ]);
 
-        $expense->update($validated);
+        $data = [
+            'expense_category' => $validated['expense_category'],
+            'description' => $validated['description'],
+            'amount' => $validated['amount'],
+            'date' => $validated['date'],
+            'notes' => $validated['notes'] ?? null,
+            'material_name' => $validated['material_name'] ?? $validated['materialName'] ?? null,
+            'quantity' => $validated['quantity'] ?? null,
+            'unit' => $validated['unit'] ?? null,
+            'price_per_unit' => $validated['price_per_unit'] ?? $validated['pricePerUnit'] ?? null,
+            'shipping_cost' => $validated['shipping_cost'] ?? $validated['shippingCost'] ?? null,
+            'discount' => $validated['discount'] ?? null,
+            'ppn_percent' => $validated['ppn_percent'] ?? $validated['ppnPercent'] ?? null,
+        ];
+
+        $expense->update($data);
 
         return response()->json([
             'status' => 'success',
