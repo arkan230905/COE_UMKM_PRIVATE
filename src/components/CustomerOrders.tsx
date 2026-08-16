@@ -309,6 +309,7 @@ export default function CustomerOrders({
               <thead className="text-[11px] text-slate-450 uppercase bg-slate-50 dark:bg-slate-800/50">
                 <tr>
                   <th scope="col" className="px-6 py-4">Kode Invoice</th>
+                  <th scope="col" className="px-6 py-4">Produk</th>
                   <th scope="col" className="px-6 py-4">Waktu Pemesanan</th>
                   <th scope="col" className="px-6 py-4">Metode Bayar</th>
                   <th scope="col" className="px-6 py-4 text-right">Total Transaksi</th>
@@ -321,6 +322,25 @@ export default function CustomerOrders({
                   <tr key={tx.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-850/40 transition-colors">
                     <td className="px-6 py-4 font-mono font-bold text-slate-900 dark:text-white text-sm">
                       #{tx.transactionCode}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-xs">
+                        {tx.items && tx.items.length > 0 ? (
+                          <div className="space-y-0.5">
+                            {tx.items.slice(0, 2).map((item, idx) => (
+                              <div key={idx} className="text-slate-700 dark:text-slate-300">
+                                <span className="font-semibold">{item.productName}</span>
+                                <span className="text-slate-400 ml-1">x{item.quantity}</span>
+                              </div>
+                            ))}
+                            {tx.items.length > 2 && (
+                              <div className="text-slate-400 text-[10px]">+{tx.items.length - 2} lainnya</div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic">No items</span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-slate-500">
                       {new Date(tx.createdAt).toLocaleString('id-ID', { dateStyle: 'long', timeStyle: 'short' })}

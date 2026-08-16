@@ -433,6 +433,7 @@ export default function AdminTransactions({
                 <tr>
                   <th scope="col" className="px-6 py-4">Kode Transaksi</th>
                   <th scope="col" className="px-6 py-4">Nama Pelanggan</th>
+                  <th scope="col" className="px-6 py-4">Produk</th>
                   <th scope="col" className="px-6 py-4">Waktu Pesan</th>
                   <th scope="col" className="px-6 py-4">Metode Bayar</th>
                   <th scope="col" className="px-6 py-4 text-right">Total Tagihan</th>
@@ -458,6 +459,26 @@ export default function AdminTransactions({
                             <span className="block text-slate-900 dark:text-white font-bold">{customer ? customer.name : 'Guest User'}</span>
                             <span className="block text-[10px] text-slate-400">{customer ? customer.phone : 'Toko Retail'}</span>
                           </div>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="text-xs">
+                          {tx.items && tx.items.length > 0 ? (
+                            <div className="space-y-0.5">
+                              {tx.items.slice(0, 2).map((item, idx) => (
+                                <div key={idx} className="text-slate-700 dark:text-slate-300">
+                                  <span className="font-semibold">{item.productName}</span>
+                                  <span className="text-slate-400 ml-1">x{item.quantity}</span>
+                                </div>
+                              ))}
+                              {tx.items.length > 2 && (
+                                <div className="text-slate-400 text-[10px]">+{tx.items.length - 2} produk lainnya</div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-slate-400 italic">No items</span>
+                          )}
                         </div>
                       </td>
 

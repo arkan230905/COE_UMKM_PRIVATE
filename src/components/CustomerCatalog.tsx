@@ -144,12 +144,19 @@ export default function CustomerCatalog({
   const requiresShipping = () => {
     const needsShipping = cart.some(item => {
       const category = categories.find(c => c.id === item.product.categoryId);
-      if (!category) return false;
-      const catNameLower = category.name.toLowerCase();
-      const hasKeyword = catNameLower.includes('makanan') || catNameLower.includes('minuman');
+      if (!category) return true; // Default: assume needs shipping if no category
       
-      console.log(`[Shipping Check] Product: ${item.product.name}, Category: ${category.name}, Needs Shipping: ${hasKeyword}`);
-      return hasKeyword;
+      const catNameLower = category.name.toLowerCase();
+      // ✅ LOGIC: Semua produk BUTUH SHIPPING, KECUALI tiket/wisata/penginapan
+      const isBookingProduct = catNameLower.includes('tiket') || 
+                               catNameLower.includes('wisata') || 
+                               catNameLower.includes('penginapan') ||
+                               catNameLower.includes('hotel');
+      
+      const needsShip = !isBookingProduct; // Inverse: NOT booking = needs shipping
+      
+      console.log(`[Shipping Check] Product: ${item.product.name}, Category: ${category.name}, Needs Shipping: ${needsShip}`);
+      return needsShip;
     });
     console.log(`[Shipping Check] Cart requires shipping: ${needsShipping}`);
     return needsShipping;
@@ -195,17 +202,17 @@ export default function CustomerCatalog({
     console.log('=====================');
 
     // ✅ DETERMINE INITIAL STATUS
-    // Tiket/booking products: immediately completed (no shipping needed)
-    // Shipping products: pending (wait for delivery confirmation)
+    // Booking products (tiket): immediately completed (no shipping)
+    // Shipping products (makanan, barang, dll): pending (wait for delivery)
     // Digital/other: paid immediately
     let initialStatus: 'pending' | 'paid' | 'completed' = 'paid';
     
     if (needsBooking) {
-      // Tiket/wisata/penginapan: langsung completed
+      // Tiket/wisata/penginapan: langsung completed (no shipping)
       initialStatus = 'completed';
       console.log('🎫 Booking transaction: Status = completed (no shipping needed)');
     } else if (needsShipping) {
-      // Makanan/minuman dengan pengiriman: pending until delivery
+      // Semua barang fisik (makanan, opak, dll): pending until delivery
       initialStatus = 'pending';
       console.log('📦 Shipping transaction: Status = pending (wait for delivery)');
     } else {

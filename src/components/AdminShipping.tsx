@@ -45,8 +45,17 @@ export default function AdminShipping({
     return customers.find(c => c.id === customerId);
   };
 
-  // Filter transactions with shipping status defined (or all transactions)
-  const shippingTransactions = transactions.filter(t => t.shippingStatus);
+  // Filter transactions: Show all NON-BOOKING transactions (requiresShipping = true OR shippingStatus exists)
+  // Exclude booking/ticket transactions (they don't need shipping)
+  const shippingTransactions = transactions.filter(t => {
+    // If requiresShipping is explicitly set, use it
+    if (t.requiresShipping !== undefined) {
+      return t.requiresShipping === true;
+    }
+    // Fallback: If has shippingStatus, it needs shipping
+    // OR if status is pending/paid (not completed booking)
+    return t.shippingStatus || (t.status === 'pending' || t.status === 'paid');
+  });
 
   const filteredTrans = shippingTransactions.filter(t => {
     const cust = getCustomer(t.customerId);
