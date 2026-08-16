@@ -557,12 +557,14 @@ export default function AdminFinancialReport({
         </div>
 
         <div className="flex gap-2">
+          {/* HIDDEN: Manual income button - not needed as income auto-syncs from transactions
           <button
             onClick={() => setIsOpenManualIncome(true)}
             className="flex items-center gap-2 px-3.5 py-2 text-xs text-white uppercase tracking-wider font-bold rounded-xl shadow-md cursor-pointer text-center bg-indigo-600 hover:bg-indigo-700 transition"
           >
             <Plus size={15} /> Tambah Pemasukan Manual
           </button>
+          */}
           <button
             onClick={handleExportPDF}
             disabled={isExportingPDF}
@@ -586,16 +588,16 @@ export default function AdminFinancialReport({
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-medium">
         {/* Total Income */}
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-2 relative overflow-hidden group">
-          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-bold uppercase tracking-wider block">Total Pendapatan</span>
+          <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-black uppercase tracking-wider block">Total Pendapatan</span>
           <div className="flex items-center gap-2">
-            <span className="text-2xl font-extrabold text-[#1E3A5F] dark:text-white leading-tight">
+            <span className="text-2xl font-black text-[#1E3A5F] dark:text-white leading-tight">
               {formatCurrency(totalIncome)}
             </span>
             <div className="p-1 px-1.5 bg-bento-light-blue dark:bg-slate-800 text-bento-navy rounded text-[10px] font-bold flex items-center gap-1">
               <TrendingUp size={11} /> +12.5%
             </div>
           </div>
-          <span className="text-[11px] text-bento-text-muted dark:text-slate-500 block">Sinkron dengan transaksi lunas & pengisian luar</span>
+          <span className="text-[11px] text-bento-text-muted dark:text-slate-500 block font-semibold">Sinkron dengan transaksi lunas & pengisian luar</span>
           <div className="absolute right-4 bottom-4 w-9 h-9 opacity-10 text-bento-navy">
             <Landmark size={36} />
           </div>
@@ -605,7 +607,7 @@ export default function AdminFinancialReport({
         <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-5 shadow-xs space-y-2 relative overflow-hidden group">
           <span className="text-[11px] text-bento-text-muted dark:text-slate-400 font-black uppercase tracking-wider block">Total Pengeluaran</span>
           <div className="flex items-center gap-2">
-            <span className="text-3xl font-black text-rose-600 dark:text-rose-400 leading-tight">
+            <span className="text-2xl font-black text-rose-600 dark:text-rose-400 leading-tight">
               {formatCurrency(totalExpense)}
             </span>
             <div className="p-1 px-1.5 bg-rose-50 dark:bg-rose-950/30 text-rose-650 rounded text-[10px] font-bold flex items-center gap-1">
@@ -648,10 +650,17 @@ export default function AdminFinancialReport({
                 <CartesianGrid stroke="#f1f5f9" strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" fontSize={11} stroke="#94a3b8" tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} stroke="#94a3b8" tickLine={false} axisLine={false} tickFormatter={(v) => formatCurrency(v)} />
-                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                <Tooltip 
+                  formatter={(value) => formatCurrency(Number(value))} 
+                  contentStyle={{ fontWeight: 'bold', fontSize: '12px' }}
+                  labelStyle={{ fontWeight: 'bold' }}
+                />
                 <Bar dataKey="Pemasukan" fill="#1E3A5F" radius={[4, 4, 0, 0]} name="Pemasukan" />
-                <Bar dataKey="Pengeluaran" fill="#E0F2FE" stroke="#1E3A5F" strokeWidth={1} radius={[4, 4, 0, 0]} name="Pengeluaran" />
-                <Legend iconType="circle" wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                <Bar dataKey="Pengeluaran" fill="#DC2626" radius={[4, 4, 0, 0]} name="Pengeluaran" />
+                <Legend 
+                  iconType="circle" 
+                  wrapperStyle={{ fontSize: '12px', paddingTop: '10px', fontWeight: 'bold' }} 
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
