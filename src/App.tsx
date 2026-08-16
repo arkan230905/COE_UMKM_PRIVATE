@@ -32,6 +32,9 @@ import storageService from './services/storage';
 import { Settings, Shield, Store, HelpCircle, Laptop, Landmark, Receipt, Info, AlertCircle, Trash } from 'lucide-react';
 
 export default function App() {
+  // ✅ ADD LOADING STATE to prevent premature render
+  const [isInitializing, setIsInitializing] = useState(true);
+  
   // Roles supported: super_admin, customer, or kasir
   const [role, setRole] = useState<'super_admin' | 'customer' | 'kasir'>('super_admin');
   
@@ -240,6 +243,7 @@ export default function App() {
       // Welcome page handling
       if (path === '/welcome') {
         setIsSuperAdminLoggedIn(false);
+        setIsInitializing(false); // ✅ Done initializing
         return;
       }
       
@@ -267,7 +271,8 @@ export default function App() {
         const slug = customerMatch[1];
         const tab = customerMatch[2];
         matchedRole = 'customer';
-        matchedTab = (tab === 'cattalog' || tab === 'catalog') ? 'catalog' : 'order-history';
+        matchedTab = (tab === 'cattalog' || tab === 'catalog') ? 'catalog' : 
+                     (tab === 'shipping-tracking' || tab === 'pantau-pengiriman') ? 'shipping-tracking' : 'order-history';
         matchedPreset = allPresets.find(p => p.businessName.trim().toUpperCase().replace(/\s+/g, '-') === slug.toUpperCase()) || null;
         
         // Auto-enable customer view without admin login
@@ -281,6 +286,7 @@ export default function App() {
           setRole('customer'); // This will trigger useEffect with role='customer'
           setActiveTab(matchedTab);
           setIsSuperAdminLoggedIn(true); // Enable access
+          setIsInitializing(false); // ✅ Done initializing
           
           // Don't call setRole again at the end - already done here
           return;
@@ -299,6 +305,8 @@ export default function App() {
       } else if (customerMatch || adminMatch || kasirMatch) {
         console.error('❌ UMKM not found in database. Available UMKMs:', allPresets.map(p => p.businessName));
       }
+      
+      setIsInitializing(false); // ✅ Done initializing
     };
 
     parseUrl();
@@ -741,6 +749,22 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [isDarkMode]);
+
+  // ✅ SHOW LOADING SCREEN while initializing (prevents flash of admin content)
+  if (isInitializing) {
+    return (
+      <div className={isDarkMode ? 'dark' : ''}>
+        <div className="min-h-screen bg-white dark:bg-slate-950 flex flex-col justify-center items-center">
+          <div className="animate-pulse space-y-4 text-center">
+            <div className="w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 rounded-2xl mx-auto flex items-center justify-center">
+              <Store size={32} className="text-indigo-600 dark:text-indigo-400" />
+            </div>
+            <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">Memuat aplikasi...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Standalone welcome page gate for admin & cashier before logging in
   // BUT allow customer direct access without login
